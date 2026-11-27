@@ -956,6 +956,43 @@ html.mob .pf .av .pchain { height: 19px; }
 .pf .av .prel.foe { color: #f4ecff; background: radial-gradient(circle at 35% 30%, #9a8ab8, #3d2a5c 60%, #160b26); text-shadow: 0 1px 2px #000; box-shadow: 0 0 0 2px #b89ae8, 0 3px 8px rgba(0, 0, 0, .85); }
 .pf .av .prel.boss, .pf .av .prel.hired { top: 62%; }
 
+/* ================= 手機版版面修正（2026-11-27，使用者選「6 項全修」）================= */
+/* 1. 按鈕：字太長時由 UI.fitText 自動縮小；手機版按鈕欄加寬一點，少縮一點 */
+html.mob { --btn-w: 300px; }
+/* 2. 選單：長的選項（只在情報傳到自己時才詢問破譯）佔整列，不再跟旁邊的按鈕疊在一起 */
+#modal .opts > .btn.wide { grid-column: 1 / -1; }
+html.mob #modal .box.gmenu .opts > .btn:first-child { grid-column: auto; }   /* 手機版遊戲選單：繼續遊戲改半寬，每列剛好兩顆、不留空格 */
+/* 3. 選角色：手機版整個框要放得進螢幕高度（以前卡片底部的定位、任務星等被切掉） */
+html.mob #modal .box.rolepick { padding: 14px 26px 12px; max-width: 94%; max-height: 96%; }
+html.mob #modal .box.rolepick h2 { margin: 0 0 4px; }
+html.mob #modal .box.rolepick .rp-note { margin: 4px 0; font-size: .8em; line-height: 1.35; }
+html.mob #modal .rpicks { gap: 18px; margin: 8px 0 4px; flex-wrap: nowrap; }
+html.mob #modal .rpick, html.mob #modal .rph-card { width: 330px; }
+html.mob #modal .rph-card.has-art { min-height: 0; }
+html.mob #modal .rph-card .rp-art { height: 118px; margin-bottom: 6px; }
+html.mob #modal .rph-card p { margin-top: 5px; line-height: 1.38; }
+html.mob #modal .rp-cap { margin-top: 4px; }
+/* 4. 特工任務：放不下時由 UI.fitText 縮小字（以前第三行被切掉） */
+/* 5. 破譯等只有一張牌的面板：手機版改成左邊大牌、右邊說明與按鈕（以前比牌桌高，要捲動才按得到「知道了」） */
+html.mob #gridpick.single { display: grid; grid-template-columns: auto minmax(0, 520px); grid-template-areas: "grid title" "grid note" "grid ops"; grid-template-rows: auto auto 1fr; column-gap: 6px; padding: 0 14px 14px 0; top: 50%; }
+html.mob #gridpick.single .gp-title { grid-area: title; margin: 14px 0 0; white-space: normal; }
+html.mob #gridpick.single .gp-note { grid-area: note; padding: 10px 6px 0; font-size: .95em; }
+html.mob #gridpick.single .gp-grid { grid-area: grid; margin: 14px 4px 0 14px; align-self: start; }
+html.mob #gridpick.single .gp-ops { grid-area: ops; align-self: end; display: flex; justify-content: center; }
+/* 6. 手牌角標：情報顏色＋傳遞方式（密／文／直／任），有轉向、加密另外標；只在手機版的手牌顯示 */
+.card .cbadge { display: none; }
+html.mob #hand .card .cbadge { display: flex; position: absolute; left: 4px; top: 4px; z-index: 3; align-items: center; gap: 2px; padding: 2px 6px 2px 4px; border-radius: 9px;
+  background: rgba(6, 8, 10, .82); border: 1px solid rgba(255, 255, 255, .35); box-shadow: 0 2px 5px #000; font-size: 24px; line-height: 1; font-weight: 900; color: #fff; pointer-events: none; }
+html.mob #hand .card .cbadge b { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; font-size: 22px; border: 2px solid rgba(255, 255, 255, .75); }
+html.mob #hand .card .cbadge i { font-style: normal; font-size: 18px; color: #ffe39a; padding: 0 1px; }
+html.mob #hand .card .cb-red b { background: #c8362e; }
+html.mob #hand .card .cb-blue b { background: #2f6fd0; }
+html.mob #hand .card .cb-black b { background: #2a2d31; }
+html.mob #hand .card .cb-dual b { background: linear-gradient(135deg, #c8362e 50%, #2f6fd0 50%); }
+/* 5. 牌桌中央：手機版中央只有約 240 舞台點高，提示框改成一行、貼近階段列，桌上的牌與指示線比較不會疊在一起 */
+html.mob #prompt { bottom: calc(var(--phase-h) + 4px); padding: 4px 20px; line-height: 1.28; }
+html.mob #prompt .sub { margin-left: .2em; }
+
 </style>
 <style>
 /* 主選單以同一張封面貫穿到設定盤，保留中央題字的位置。 */
@@ -2189,6 +2226,10 @@ html.mob #dirpick .dp-center { gap: 5px; padding: 6px 18px; }
               <span class="mlab" id="start-label">起始玩家</span>
               <div class="seg" id="opt-start" role="group" aria-labelledby="start-label"><button data-v="random">隨機</button><button data-v="human">自己先</button></div>
             </div>
+            <div class="menu-field">
+              <span class="mlab" id="ai-label">電腦難度</span>
+              <div class="seg" id="opt-ai" role="group" aria-labelledby="ai-label"><button data-v="standard" title="攻防與判斷比較強，一樣看不到別人的牌">標準</button><button data-v="novice" title="原本的電腦">新手</button></div>
+            </div>
           </div>
         </div>
         <div class="menu-tuners">
@@ -2267,7 +2308,7 @@ FS.ASSETS = {"assets/cards/back.webp":{"type":"image/webp","b64":"UklGRvQ4AABXRU
 var FS = globalThis.FS || (globalThis.FS = {});
 (function (S) {
   'use strict';
-  S.VERSION = '0.3.13';
+  S.VERSION = '0.3.19';
   // 素材路徑：資料夾版直接用 assets/ 的檔案；離線單檔版（work/build_single.py 產生）把素材內嵌在 S.ASSETS，
   // 第一次用到時轉成記憶體裡的圖片網址（blob:），之後重複使用。所有在程式裡拼出來的素材路徑都要經過這裡。
   var blobs = {};
@@ -3395,6 +3436,9 @@ var FS = globalThis.FS || (globalThis.FS = {});
   // 某人再收到一張假情報的代價（k＝他已有幾張）：[第 1 張, 第 2 張, 第 3 張＝死亡]
   AI.BLACKCOST = [3, 7, 90];
   function blackCost(k) { var t = AI.BLACKCOST; return k >= 2 ? t[2] : (k === 1 ? t[1] : t[0]); }
+  // 電腦難度（使用者 2026-11-27）：新手＝原本的電腦（一行都不改）；標準＝加強攻防與判斷，一樣不作弊。
+  // 玩家的 aiLevel 沒設定時一律當新手，所以既有的測試與量測工具不受影響
+  AI.std = function (me) { return me.aiLevel === 'standard'; };
   AI.card = function (g, me, id) { return g.findUsable ? g.findUsable(me, id) : g.findHand(me, id); };   // 包含就計可用的情報
   AI.FUNC = { shipo: 6, jimi: 6, suoding: 5.5, zhuanyi: 5.5, jiehuo: 5, shaohui: 5, diaohu: 4.5, zengyuan: 4, lijian: 4, weixian: 4, diaobao: 3.5, poyi: 3.5, mimi: 3, shitan: 3, gongkai: 2 };
 
@@ -3406,7 +3450,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
   AI.newMem = function (g, p) {
     var total = 0; Object.keys(g.pool).forEach(function (k) { total += g.pool[k]; });
     var pa = (g.pool[p.identity] - 1) / (total - 1), l0 = Math.log(pa / (1 - pa));
-    return { L: g.players.map(function () { return l0; }), sure: {}, once: { turn: -1, map: {} }, intent: null };
+    return { L: g.players.map(function () { return l0; }), sure: {}, once: { turn: -1, map: {} }, intent: null, ver: 0 };
   };
   // me 認為 seat 是自己人的機率
   AI.pAlly = function (g, me, seat) {
@@ -3414,8 +3458,30 @@ var FS = globalThis.FS || (globalThis.FS = {});
     if (me.identity === 'te') return 0.1;   // 特工沒有隊友（同時宣勝的特工才一起贏）
     var m = g.aiMem[me.seat];
     if (m.sure[seat] != null) return m.sure[seat] ? 1 : 0;
+    var W = AI.wOf(me);
+    if (W.norm) return sig(m.L[seat] + W.norm * normC(g, me, m));   // 標準：全部人的猜測加起來要符合隊友人數
     return sig(m.L[seat]);
   };
+  // 標準（2026-11-27）：身分牌張數決定我有幾個隊友（4 人 2 對 2＝其他三人裡剛好一個隊友）。各人的猜測整體平移，讓加起來等於該有的隊友數。
+  // 只用公開的身分牌張數與自己的推理。m.ver＝推理有變動就加一，平移量照版本快取
+  function normC(g, me, m) {
+    if (m.normVer === m.ver && m.normC != null) return m.normC;
+    var total = 0; Object.keys(g.pool).forEach(function (k) { total += g.pool[k]; });
+    var n = g.players.length, target = (g.pool[me.identity] - 1) * (n - 1) / Math.max(1, total - 1), U = [];
+    g.players.forEach(function (q) { if (q === me) return; if (m.sure[q.seat] === true) target -= 1; else if (m.sure[q.seat] == null) U.push(m.L[q.seat]); });
+    var c = 0;
+    if (U.length) {
+      target = clamp(target, 0.05, U.length - 0.05);
+      var lo = -12, hi = 12;
+      for (var it = 0; it < 30; it++) {
+        c = (lo + hi) / 2;
+        var sum = 0; for (var i = 0; i < U.length; i++) sum += sig(U[i] + c);
+        if (sum > target) hi = c; else lo = c;
+      }
+    }
+    m.normVer = m.ver; m.normC = c;
+    return c;
+  }
   function settle(g, me, m) {   // 用身分牌張數排除
     var total = 0; Object.keys(g.pool).forEach(function (k) { total += g.pool[k]; });
     var maxA = g.pool[me.identity] - 1, maxF = total - g.pool[me.identity], a = 0, f = 0, unk = [];
@@ -3425,6 +3491,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
     });
     if (a >= maxA) unk.forEach(function (s) { m.sure[s] = false; });
     else if (f >= maxF) unk.forEach(function (s) { m.sure[s] = true; });
+    m.ver = (m.ver || 0) + 1;
   }
   // 攻擊的依據（使用者 2026-11-24：「可以懷疑，但還不構成攻擊的依據」）：
   // 指名對某人做壞事（鎖定、危險情報、公開文本、指名塞假情報、轉移／調包假情報、離間過去、抽他的手牌）之前，
@@ -3443,7 +3510,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
   function setSure(g, me, m, seat, identity) {
     if (seat === me.seat) return;
     var was = m.sure[seat] == null ? null : m.sure[seat];
-    m.sure[seat] = identity === me.identity;
+    m.sure[seat] = identity === me.identity; m.ver = (m.ver || 0) + 1;
     if (was == null) replay(g, me, m, seat);
     settle(g, me, m);
   }
@@ -3460,7 +3527,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
       if (h.A === seat) h.pa = pNow; else h.pb = pNow;
     });
   }
-  function bump(g, me, m, seat, w) { if (seat === me.seat || m.sure[seat] != null) return; m.L[seat] = clamp(m.L[seat] + w, -5, 5); }
+  function bump(g, me, m, seat, w) { if (seat === me.seat || m.sure[seat] != null) return; m.L[seat] = clamp(m.L[seat] + w, -5, 5); m.ver = (m.ver || 0) + 1; }
   // A 對 B 做了友善（w>0）或敵對（w<0）的事
   function rel(g, me, m, A, B, w) {
     if (A === B || A === me.seat || A == null || B == null) return;
@@ -3475,42 +3542,77 @@ var FS = globalThis.FS || (globalThis.FS = {});
     if (color !== 'red' && color !== 'blue') return;
     bump(g, me, m, seat, color === myCol(me) ? w : -w);
   }
+  // 推理用的證據權重。新手＝原本的數字（一個都不改）；標準＝AI.WSTD（work/infercal.js 用實際對局校正，2026-11-27），
+  // 另外加了新手沒用的公開線索（鎖定、調虎離山、截獲時看得到的顏色）。權重 0＝不用這條線索
+  AI.W = { sendColor: 0.8, choiceBase: 0.45, choiceSlope: 0.12, aimedBlack: -2.2, xferBlack: -1.4, looseBlack: -0.5, aimedTrue: 1.0, takeFaceUp: 0.5, rejectFaceUp: -0.6,
+    burnBlack: 2.0, burnTrue: -1.6, weixian: -0.6, negate: -0.7, swapColor: 0.8, swapBlack: -1.8, intercept: -0.3, gongkaiBump: 1.3,
+    lock: 0, divertBlack: 0, divertTrue: 0, divertHidden: 0, interceptColor: 0, norm: 0, acceptAimed: 0, rejectAimed: 0, mimiColor: 0 };
+  // 標準：work/infercal.js 在新手 300 局（4／5／6／8 人）上校正（2026-11-27）：Brier 0.163→0.134、猜對 76.2%→78.9%。
+  // 傳出的顏色是很強的線索（原本低估約 4 倍）；自願收下翻開的真情報幾乎沒有參考價值（潛伏也會防守收藍）；新加：調虎離山擋掉看得到的真情報
+  AI.WSTD = Object.assign({}, AI.W, { sendColor: 1.6, choiceBase: 0.9, choiceSlope: 0.24, looseBlack: -1, aimedTrue: 0.5, takeFaceUp: 0, burnBlack: 4, weixian: -1.2, negate: -1.4, divertTrue: 1.5,
+    rejectAimed: -0.6, mimiColor: 4 });   // 第二批：秘密下達生效後傳出的顏色＝下暗號的人要的顏色（電腦一律下自己顏色，校正最佳是 8；真人可能故意下別的，取 4）
+  AI.wOf = function (me) { return AI.std(me) && !AI.STD_OFF.infer ? AI.WSTD : AI.W; };
   AI.obs = {
     receive: function (g, me, m, d) {
-      var c = d.card.color, x = d.ctx, X = d.seat;
+      var W = AI.wOf(me), c = d.card.color, x = d.ctx, X = d.seat;
       if (x.sacrifice != null) { if (c === 'black') rel(g, me, m, X, x.sacrifice, 1.6); return; }   // 犧牲：替他擋下假情報
       var A = x.swapBy != null ? x.swapBy : x.sender;   // 決定這張牌內容的人
       // 傳出什麼顏色只是弱證據：手上可能剛好沒有自己的顏色（使用者 2026-11-24：沒有藍情報只好傳紅）。
       // 手牌越少越可能是沒得選；傳回自己手上被迫收下也不多算
-      var choice = 0.45 + 0.12 * Math.min(4, g.players[A].hand.length);
-      if (!x.constrained || x.swapBy != null) campEv(g, me, m, A, c, 0.8 * choice);
+      var choice = W.choiceBase + W.choiceSlope * Math.min(4, g.players[A].hand.length);
+      if (!x.constrained || x.swapBy != null) campEv(g, me, m, A, c, W.sendColor * choice);
       var aimer = x.transferBy != null ? x.transferBy : A;
       var aimed = x.transferBy != null || (x.swapBy == null && !x.returned && ((x.mode === 'zhi' && x.zhiTarget === X && x.interceptBy == null) || x.locked));
       if (X !== aimer) {
-        if (c === 'black') rel(g, me, m, aimer, X, aimed ? (x.transferBy != null && !x.wasFaceUp ? -1.4 : -2.2) : -0.5);
-        else if (aimed) rel(g, me, m, aimer, X, 1.0);
+        if (c === 'black') rel(g, me, m, aimer, X, aimed ? (x.transferBy != null && !x.wasFaceUp ? W.xferBlack : W.aimedBlack) : W.looseBlack);
+        else if (aimed) rel(g, me, m, aimer, X, W.aimedTrue);
       }
-      if (x.wasFaceUp && !x.forced) campEv(g, me, m, X, c, 0.5 * (AI.recvEvScale ? AI.recvEvScale(g, me, X) : 1));   // 自願收下面朝上的真情報
+      if (x.wasFaceUp && !x.forced) campEv(g, me, m, X, c, W.takeFaceUp * (AI.recvEvScale ? AI.recvEvScale(g, me, X) : 1));   // 自願收下面朝上的真情報
+      // 標準：被秘密下達逼著傳出的牌，顏色＝下暗號的人要的顏色（誰下的暗號、有沒有生效都是公開的；暗號對照只有雙方看得到，這裡不讀）
+      if (W.mimiColor && x.constrained && x.swapBy == null && m.mimiBy && m.mimiBy.sender === x.sender && m.mimiBy.turn === g.turnNo) campEv(g, me, m, m.mimiBy.user, c, W.mimiColor);
+    },
+    // 標準：別人指名直達給他的蓋牌，他收不收＝他信不信任傳出者
+    accept: function (g, me, m, d) {
+      var W = AI.wOf(me), t = g.transit; if (!W.acceptAimed || d.forced || !t) return;
+      if (!t.faceUp && t.mode === 'zhi' && t.target === d.seat && t.transferBy == null && t.interceptBy == null && t.sender !== d.seat) rel(g, me, m, d.seat, t.sender, W.acceptAimed);
+    },
+    mimiResult: function (g, me, m, d) {   // 只讀公開的部分：誰下的、對誰、有沒有生效（不讀暗號顏色）
+      if (!AI.wOf(me).mimiColor) return;
+      if (d.has && !d.void) m.mimiBy = { user: d.entry.user, sender: d.sender, turn: g.turnNo };
     },
     reject: function (g, me, m, d) {
-      var t = g.transit;
-      if (t && t.faceUp && t.card) campEv(g, me, m, d.seat, t.card.color, -0.6);
+      var t = g.transit, W = AI.wOf(me);
+      if (t && t.faceUp && t.card) campEv(g, me, m, d.seat, t.card.color, W.rejectFaceUp);
+      else if (W.rejectAimed && t && t.mode === 'zhi' && t.target === d.seat && t.transferBy == null && t.interceptBy == null && t.sender !== d.seat) rel(g, me, m, d.seat, t.sender, W.rejectAimed);   // 標準：拒收指名給他的直達
     },
-    burn: function (g, me, m, d) { rel(g, me, m, d.by, d.seat, d.card && d.card.color !== 'black' ? -1.6 : 2.0); },   // 燒假情報＝幫他；燒真情報（狙擊、計中計）＝害他
-    used: function (g, me, m, d) { var e = d.entry; if (!e.negated && e.name === 'weixian') rel(g, me, m, e.user, e.target, -0.6); },
-    negate: function (g, me, m, d) { rel(g, me, m, d.by.user, d.entry.user, -0.7); },
+    burn: function (g, me, m, d) { var W = AI.wOf(me); rel(g, me, m, d.by, d.seat, d.card && d.card.color !== 'black' ? W.burnTrue : W.burnBlack); },   // 燒假情報＝幫他；燒真情報（狙擊、計中計）＝害他
+    used: function (g, me, m, d) { var e = d.entry; if (!e.negated && e.name === 'weixian') rel(g, me, m, e.user, e.target, AI.wOf(me).weixian); },
+    negate: function (g, me, m, d) { rel(g, me, m, d.by.user, d.entry.user, AI.wOf(me).negate); },
     swap: function (g, me, m, d) {
-      campEv(g, me, m, d.sender, d.old.color, 0.8);   // 被換下的原情報進棄牌堆，大家都看得到
-      if (d.card.color === 'black') rel(g, me, m, d.by, d.sender, -1.8);
+      var W = AI.wOf(me);
+      campEv(g, me, m, d.sender, d.old.color, W.swapColor);   // 被換下的原情報進棄牌堆，大家都看得到
+      if (d.card.color === 'black') rel(g, me, m, d.by, d.sender, W.swapBlack);
     },
-    intercept: function (g, me, m, d) { rel(g, me, m, d.by, d.from, -0.3); },
+    intercept: function (g, me, m, d) {
+      var W = AI.wOf(me); rel(g, me, m, d.by, d.from, W.intercept);
+      if (W.interceptColor) { var c = AI.knownColor(g, me); if (c) campEv(g, me, m, d.by, c, W.interceptColor); }   // 標準：看得到顏色時，搶的人想要這個顏色
+    },
+    // 標準才用的公開線索（新手權重 0）
+    lock: function (g, me, m, d) { var W = AI.wOf(me); if (W.lock) rel(g, me, m, d.by, d.seat, W.lock); },
+    divert: function (g, me, m, d) {
+      var W = AI.wOf(me); if (!W.divertBlack && !W.divertTrue && !W.divertHidden) return;
+      var c = AI.knownColor(g, me);   // 只用自己看得到的顏色
+      if (c === 'black') rel(g, me, m, d.by, d.seat, W.divertBlack);   // 替他擋掉假情報＝幫他
+      else if (c) { campEv(g, me, m, d.by, c, -W.divertTrue); rel(g, me, m, d.by, d.seat, -W.divertTrue * 0.5); }   // 擋掉真情報：不想讓他拿到這個顏色
+      else rel(g, me, m, d.by, d.seat, W.divertHidden);
+    },
     gongkaiResult: function (g, me, m, d) {
       var v = d.card.v;
       if (d.seat === me.seat || g.camps.indexOf(v.forced) < 0) return;
       if (d.act !== v.act) {   // 做了另一個動作：一定不是被強制的那個身分
         var other = g.camps.filter(function (k) { return k !== v.forced; });
         if (other.length === 1) setSure(g, me, m, d.seat, other[0]);
-      } else bump(g, me, m, d.seat, v.forced === me.identity ? 1.3 : -1.3);
+      } else { var gb = AI.wOf(me).gongkaiBump; bump(g, me, m, d.seat, v.forced === me.identity ? gb : -gb); }
     },
     learn: function (g, me, m, d) { if (d.seat === me.seat) setSure(g, me, m, d.about, d.identity); },
     death: function (g, me, m, d) { if (d.identity) setSure(g, me, m, d.seat, d.identity); },   // 城府：老鬼死亡可以不公開身分
@@ -3535,8 +3637,14 @@ var FS = globalThis.FS || (globalThis.FS = {});
   AI.recvVal = function (g, me, q, c) {
     var col = myCol(me), en = enCol(me), pa = mine(g, me, q.seat), k = g.counts(q);
     if (c === 'black') {
-      if (q === me) return -blackCost(k.black);
-      var bv = AI.hostile(g, me, pa) * blackCost(k.black) * 0.8;   // 塞假情報給沒把握的人＝可能打到自己人
+      var thr = 0;
+      if (stdOn(me, 'threat') && k.black >= 1) {   // 標準：死掉的人面前的情報都作廢——殺掉快湊滿的敵人更值，快湊滿的自己人被殺損失更大
+        var kc = k[col] + k.dual, ke = k[en] + k.dual, w = k.black >= 2 ? 1 : 0.25;
+        var tv = function (n) { return n >= 2 ? AI.STD.threat2 : (n === 1 ? AI.STD.threat1 : 0); };
+        thr = w * ((q === me ? 0 : (1 - pa) * tv(ke)) - pa * tv(kc));
+      }
+      if (q === me) return -blackCost(k.black) + thr;
+      var bv = AI.hostile(g, me, pa) * blackCost(k.black) * 0.8 + thr;   // 塞假情報給沒把握的人＝可能打到自己人
       // 有特工的局：把人推到兩張假情報，就是替特工製造殺人、等人死的機會（2026-11-26 補防範）
       if (k.black === 1 && g.pool && g.pool.te) bv -= AI.EXPOSE;
       return bv;
@@ -3553,9 +3661,35 @@ var FS = globalThis.FS || (globalThis.FS = {});
     zhi: { A: { own: 0.55, en: 0.2, black: 0.25 }, F: { own: 0.12, en: 0.5, black: 0.38 } },     // 直達，本來不是給我的
     mi: { A: { own: 0.5, en: 0.15, black: 0.35 }, F: { own: 0.1, en: 0.5, black: 0.4 } }         // 密電，一路傳過來
   };
-  // 蓋著的情報到 r 面前。rc＝r 的陣營色，pS＝r 認為傳出者 sd 是自己人的機率，back＝拒收後回到傳出者的機率
-  function evFaceDown(g, r, rc, sd, pS, kind, back) {
-    var d = DIST[kind], k = g.counts(r), ks = g.counts(sd), oc = rc === 'red' ? 'blue' : 'red';
+  // 標準用的分布：用新手 800 局實際量到的（2026-11-27；直達給別人的樣本少，取量測與舊假設的中間）
+  var DIST_STD = {
+    aimed: { A: { own: 0.76, en: 0.18, black: 0.06 }, F: { own: 0.22, en: 0.29, black: 0.49 } },
+    zhi: { A: { own: 0.52, en: 0.15, black: 0.33 }, F: { own: 0.22, en: 0.48, black: 0.3 } },
+    mi: { A: { own: 0.62, en: 0.18, black: 0.2 }, F: { own: 0.12, en: 0.49, black: 0.39 } }
+  };
+  // 標準：再看傳出者當下的情報（公開的）。量測（work 外 distcond，標準對新手 1,600 局）：
+  // 傳出者已有兩張假情報時幾乎不會直達假情報（被拒收就退回殺死自己）；傳出者是敵人、自己顏色已有兩張而假情報不到兩張時，直達給你的八成是假情報
+  var DIST_B2 = {
+    aimed: { A: { own: 0.73, en: 0.23, black: 0.04 }, F: { own: 0.58, en: 0.35, black: 0.07 } },
+    zhi: { A: { own: 0.6, en: 0.3, black: 0.1 }, F: { own: 0.4, en: 0.45, black: 0.15 } },
+    mi: { A: { own: 0.56, en: 0.32, black: 0.12 }, F: { own: 0.29, en: 0.53, black: 0.18 } }
+  };
+  var DIST_HOT = {   // 傳出者自己顏色已有兩張（假情報不到兩張）
+    aimed: { A: { own: 0.81, en: 0.17, black: 0.02 }, F: { own: 0.08, en: 0.12, black: 0.8 } },
+    zhi: { A: { own: 0.5, en: 0.1, black: 0.4 }, F: { own: 0.15, en: 0.3, black: 0.55 } },
+    mi: { A: { own: 0.57, en: 0.11, black: 0.32 }, F: { own: 0.11, en: 0.38, black: 0.51 } }
+  };
+  // rc＝收的人的陣營色（A＝傳出者同色、F＝傳出者是另一色）
+  function distFor(kind, ks, rc, std) {
+    if (!std || AI.STD_OFF.dist) return DIST[kind];
+    if (AI.STD_OFF.cond) return DIST_STD[kind];
+    if (ks.black >= 2) return DIST_B2[kind];
+    var oc = rc === 'red' ? 'blue' : 'red', base = DIST_STD[kind];
+    return { A: ks[rc] + ks.dual >= 2 ? DIST_HOT[kind].A : base.A, F: ks[oc] + ks.dual >= 2 ? DIST_HOT[kind].F : base.F };
+  }
+  // 蓋著的情報到 r 面前。rc＝r 的陣營色，pS＝r 認為傳出者 sd 是自己人的機率，back＝拒收後回到傳出者的機率；std＝做決定的人是標準難度
+  function evFaceDown(g, r, rc, sd, pS, kind, back, std) {
+    var k = g.counts(r), ks = g.counts(sd), oc = rc === 'red' ? 'blue' : 'red', d = distFor(kind, ks, rc, std);
     var pOwn = pS * d.A.own + (1 - pS) * d.F.own, pBlack = pS * d.A.black + (1 - pS) * d.F.black;
     var accept = pOwn * ownVal(k[rc] + k.dual) - pBlack * blackCost(k.black);
     var rejA = d.A.own * ownVal(ks[rc] + ks.dual) - d.A.black * blackCost(ks.black) * 0.8;      // 傳出者是自己人：讓他自己收
@@ -3573,7 +3707,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
       return c === myCol(me) ? pa * 0.95 + (1 - pa) * 0.5 : pa * 0.5 + (1 - pa) * 0.95;
     }
     var kind = mode === 'zhi' ? 'aimed' : 'mi', back = mode === 'zhi' ? 1 : 0.6;
-    function pacc(rc, pS) { var e = evFaceDown(g, q, rc, me, pS, kind, back); return sig((e.accept - e.reject) / 0.3); }
+    function pacc(rc, pS) { var e = evFaceDown(g, q, rc, me, pS, kind, back, AI.std(me)); return sig((e.accept - e.reject) / 0.3); }
     // 對方若是自己人，多半已經看出我是自己人；若是敵人，多半對我半信半疑
     return pa * pacc(myCol(me), 0.65) + (1 - pa) * pacc(enCol(me), 0.28);
   }
@@ -3651,7 +3785,12 @@ var FS = globalThis.FS || (globalThis.FS = {});
     var sd = g.players[t.sender];
     var aimed = t.mode === 'zhi' && t.target === me.seat && t.transferBy == null && t.interceptBy == null;
     var back = !sd.alive ? 0 : (t.mode === 'zhi' ? 1 : 0.6);
-    return evFaceDown(g, me, myCol(me), sd, mine(g, me, t.sender), aimed ? 'aimed' : (t.mode === 'zhi' ? 'zhi' : 'mi'), back);
+    if (sd.alive && t.mode !== 'zhi' && stdOn(me, 'ret')) {   // 標準：我後面還隔幾個人才回到傳出者（0 個＝我拒收就直接回到他手上）
+      var s = g.next(me.seat, t.dir), between = 0, guard = 0;
+      while (s !== t.sender && s !== me.seat && guard++ < 10) { between++; s = g.next(s, t.dir); }
+      back = between === 0 ? 1 : (between === 1 ? 0.75 : 0.55);
+    }
+    return evFaceDown(g, me, myCol(me), sd, mine(g, me, t.sender), aimed ? 'aimed' : (t.mode === 'zhi' ? 'zhi' : 'mi'), back, AI.std(me));
   };
   // 我方顏色的情報到我面前：拒收之後，會不會先到一個勝利情報比我多的自己人手上？會就回傳他的座位
   AI.yieldTo = function (g, me, t) {
@@ -3669,6 +3808,53 @@ var FS = globalThis.FS || (globalThis.FS = {});
     }
     return null;
   };
+  // ---------- 標準 AI（2026-11-27，使用者：「現在就是要做標準 AI 的攻防、判斷能力，但不能因為如此而作弊」）----------
+  // 新手照舊；以下只在 AI.std(me) 時用。資訊來源跟新手一樣：公開事件、自己的手牌、自己看過的牌、自己的推理
+  AI.STD = { reserve: 12, threat1: 12, threat2: 45 };   // reserve：對打 3→57.8%、8→59.3%、11～17→約 60%（work/ab_level.js，2026-11-27）   // 反制牌（截獲、調虎離山、調包）的保留價值：換到的不夠多就留著，等關鍵時刻
+  AI.STD_OFF = {};           // 對照用：關掉某幾項（work/ab_level.js 的 OFF）
+  function stdOn(me, key) { return AI.std(me) && !AI.STD_OFF[key]; }
+  AI.stdOn = stdOn;
+  function noDeathAgent(g, me) { return me.identity === 'te' && !!S.R && S.R.noDeath(me) && !g.deaths.length; }
+  // 傳遞中的情報如果交到 R 手上：它是各種顏色的機率（我的估計）。看得到就照實際顏色
+  function colorDist(g, me, t, R, trig) {
+    var c = AI.knownColor(g, me);
+    if (c) { var d0 = {}; d0[c] = 1; return d0; }
+    var col = myCol(me), en = enCol(me), pR = mine(g, me, R.seat), pS = mine(g, me, t.sender);
+    var q = R.seat === t.sender ? 1 : pS * pR + (1 - pS) * (1 - pR);   // 傳出者和 R 是同一邊的機率
+    var aimed = t.mode === 'zhi' && t.target === R.seat && t.transferBy == null, kind = aimed ? 'aimed' : (t.mode === 'zhi' ? 'zhi' : 'mi');
+    var ks = g.counts(g.players[t.sender]);
+    var Dm = distFor(kind, ks, col, true), De = distFor(kind, ks, en, true);   // R 是我方色時用 Dm、是敵方色時用 De
+    var D = { A: { own: pR * Dm.A.own + (1 - pR) * De.A.own, en: pR * Dm.A.en + (1 - pR) * De.A.en, black: pR * Dm.A.black + (1 - pR) * De.A.black },
+      F: { own: pR * Dm.F.own + (1 - pR) * De.F.own, en: pR * Dm.F.en + (1 - pR) * De.F.en, black: pR * Dm.F.black + (1 - pR) * De.F.black } };
+    var own = q * D.A.own + (1 - q) * D.F.own, oth = q * D.A.en + (1 - q) * D.F.en, blk = q * D.A.black + (1 - q) * D.F.black;
+    var fb = trig ? AI.forcedBlackP(g, me, trig) : 0;   // 被鎖定／被轉移的兩黑玩家：多半是假情報
+    if (fb > blk) { var sc = (1 - fb) / Math.max(1e-6, 1 - blk); own *= sc; oth *= sc; blk = fb; }
+    var out = { black: blk }; out[col] = pR * own + (1 - pR) * oth; out[en] = pR * oth + (1 - pR) * own;   // R 的陣營色＝我方色（機率 pR）或敵方色
+    return out;
+  }
+  function evRecv(g, me, R, dist) { var v = 0; Object.keys(dist).forEach(function (c) { v += dist[c] * AI.recvVal(g, me, R, c); }); return v; }
+  // 截獲：情報改到我面前（之後我還能收或拒收，被鎖定就只能收）；X 收不到
+  AI.stdJiehuo = function (g, me, trig) {
+    var t = g.transit, X = g.players[trig.actor], d = colorDist(g, me, t, X, trig);
+    var deny = -evRecv(g, me, X, d), mv = evRecv(g, me, me, d);
+    if (!g.turn.locked.has(me.seat)) mv = Math.max(0, mv);
+    return { val: deny + mv - AI.STD.reserve, intent: deny > 0 && (d.black || 0) < 0.5 };
+  };
+  // 調虎離山：X 收不到；直達被調開就回到傳出者、他必須收（密電、文本繼續往下傳，當作不好不壞）
+  AI.stdDiaohu = function (g, me, trig) {
+    var t = g.transit, X = g.players[trig.actor], d = colorDist(g, me, t, X, trig), v = -evRecv(g, me, X, d);
+    var Sd = g.players[t.sender];
+    if (t.mode === 'zhi' && Sd.alive && Sd !== X) v += evRecv(g, me, Sd, d);
+    return v - AI.STD.reserve;
+  };
+  // 調包：情報繞回傳出者時換成我的牌（翻開由他重新傳）。原本那份他就收不到
+  AI.stdDiaobao = function (g, me, dc) {
+    var t = g.transit, Sd = g.players[t.sender], d = colorDist(g, me, t, Sd, null), col = myCol(me);
+    var cur = evRecv(g, me, Sd, d);
+    var nw = dc === 'black' ? AI.recvVal(g, me, Sd, 'black') * 0.8 : dc === col ? 3 : dc === 'dual' ? -5 : -12;   // 翻開的假情報大家都不收，多半又回到他手上
+    return nw - cur - AI.STD.reserve;
+  };
+
   // 這張使用中的牌對我方有多不利（正＝不利，值得識破；負＝對我方有利）
   AI.harm = function (g, me, E, trig, asTarget) {
     var a = mine(g, me, E.user), T = asTarget != null ? asTarget : E.target, t = g.transit;
@@ -3886,6 +4072,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
           break;
         }
         case 'jiehuo':
+          if (stdOn(me, 'counter') && !noDeathAgent(g, me)) { var sj = AI.stdJiehuo(g, me, trig); consider(o, sj.val, { intent: sj.intent }); break; }
           X = g.players[trig.actor]; pX = mine(g, me, X.seat); kX = g.counts(X); pS = mine(g, me, t.sender);
           if (k.black >= 2 && c == null) break;
           if (c === col || c === 'dual') v = (1 - pX) * (ownVal(k[col] + k.dual) + 1) + (pX > 0.5 && k[col] + k.dual >= 2 && kX[col] + kX.dual < 2 ? 50 : 0);
@@ -3896,6 +4083,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
           consider(o, v - 2, { intent: c == null || c === en });
           break;
         case 'diaohu':
+          if (stdOn(me, 'counter') && !noDeathAgent(g, me)) { consider(o, AI.stdDiaohu(g, me, trig)); break; }   // 老槍、鋼鐵特工（不能有人死亡）照原本的判斷：這套估值會害它們（2026-11-27）
           X = g.players[trig.actor]; pX = mine(g, me, X.seat); kX = g.counts(X); pS = mine(g, me, t.sender);
           if (c === 'black') v = (2 * pX - 1) * blackCost(kX.black) * 0.7;
           else if (c === en || c === 'dual') v = (1 - pX) * ownVal(kX[en] + kX.dual) * 0.5;
@@ -3906,6 +4094,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
           break;
         case 'diaobao': {
           var dc = AI.card(g, me, o.cardId).color, sd = g.players[t.sender], ks = g.counts(sd);
+          if (stdOn(me, 'bao') && !noDeathAgent(g, me)) { consider(o, AI.stdDiaobao(g, me, dc)); break; }
           pS = mine(g, me, sd.seat);
           var lockedOther = false;
           g.turn.locked.forEach(function (s) { if (s !== sd.seat && g.players[s].alive) lockedOther = true; });
@@ -4410,6 +4599,8 @@ var FS = globalThis.FS || (globalThis.FS = {});
     ai: { use: function (g, me, req) {
       var c = req.ctx, X = c.p, k = g.counts(me).black, kx = g.counts(X).black, pa = AI.pAlly(g, me, X.seat);
       if (me.identity === 'te' && me.role && k >= 2 && c.card && c.card.color === 'black' && R.deathWins(g, me)) return true;   // 特工浮萍：接下第三張假情報就完成任務（2026-11-26）
+      // 標準特工浮萍（2026-11-27）：本來就要靠假情報死——條件達成後任何假情報都搶來收；還沒達成時只收第一張（順便抽兩張），兩張就危險了
+      if (me.identity === 'te' && me.role && stdA(me, 'afuping') && R.mRole(me) === 'fuping') return R.deathWins(g, me) ? true : (k === 0 && !!R.STDA.fpFirst);
       return k <= 1 && pa > 0.78 && (kx >= 2 || (kx > k && pa > 0.92));
     } }
   });
@@ -4861,7 +5052,10 @@ var FS = globalThis.FS || (globalThis.FS = {});
         await g.giveIntel(g.players[s], card, q.seat, '破釜沉舟');
       } } },
     ai: {
-      use: function (g, me) { return me.hand.length >= 4 || (me.hand.length >= 2 && !!R.killTarget(g, me)); },
+      use: function (g, me) {
+        if (me.identity === 'te' && R.mRole(me) === 'laojin' && stdA(me, 'alaojin') && me.role === 'laojin') return me.hand.length >= 3;   // 標準特工老金：用破釜沉舟重新翻開，下次收情報又能棄車保帥
+        return me.hand.length >= 4 || (me.hand.length >= 2 && !!R.killTarget(g, me));
+      },
       cost: function (g, me, req) { return byVal(g, me, req.cards).slice(0, 2).map(function (c) { return c.id; }); },
       target: function (g, me, req) { return R.bestGive(g, me, [req.card], req.seats).seat; }
     }
@@ -5118,6 +5312,11 @@ var FS = globalThis.FS || (globalThis.FS = {});
     ai: {
       arrive: function (g, me, req) {
         var t = g.transit, c = AI.knownColor(g, me), k = g.counts(me), foe = R.otherSeats(g, me).some(function (s) { return AI.foe(g, me, s); });
+        if (stdA(me, 'aliang') && me.identity === 'te') {   // 標準：有人已有兩張假情報、他死了算我的任務——翻開，是假情報就塞給他
+          var best = 0;
+          R.otherSeats(g, me).forEach(function (s) { var q = g.players[s]; if (q.alive && g.counts(q).black >= 2) best = Math.max(best, AI.recvVal(g, me, q, 'black')); });
+          if (best > 20) { var pb = c ? (c === 'black' ? 1 : 0) : AI.evUnknown(g, me, t).pBlack; if (pb * best > 12) return true; }
+        }
         if (!foe) return false;
         if (c === 'black') return !req.canReject || k.black >= 1;
         if (c != null) return false;
@@ -5592,14 +5791,50 @@ var FS = globalThis.FS || (globalThis.FS = {});
       confirm: function () { return true; },
       mix: function (g, me, req) {
         var X = g.players[req.trig.actor];
-        return req.cards.slice().sort(function (a, b) { return AI.recvVal(g, me, X, b.color) - AI.recvVal(g, me, X, a.color); }).slice(0, 2).map(function (c) { return c.id; });
+        var sorted = req.cards.slice().sort(function (a, b) { return AI.recvVal(g, me, X, b.color) - AI.recvVal(g, me, X, a.color); });
+        if (stdA(me, 'amaozi')) {   // 標準：比原情報好的牌全部洗進去（例如要殺人就把黑牌全放進去，抽中假情報的機會更高），至少兩張
+          var cur = R.maoziCur(g, me, X), good = sorted.filter(function (c) { return AI.recvVal(g, me, X, c.color) > cur; });
+          if (good.length >= 2) return good.map(function (c) { return c.id; });
+        }
+        return sorted.slice(0, 2).map(function (c) { return c.id; });
       }
     }
   });
   // 帽子戲法值不值得：知道情報內容時，用手上最好的兩張牌（＋抽一張）洗混後的期望值
+  // 原情報交到 X 手上的價值：看得到就照實際；標準在看不到時用估計（四成是假情報）
+  R.maoziCur = function (g, me, X) {
+    var c = AI.knownColor(g, me);
+    if (c != null) return AI.recvVal(g, me, X, c);
+    var pb = 0.4;
+    return pb * AI.recvVal(g, me, X, 'black') + (1 - pb) * (AI.recvVal(g, me, X, 'red') + AI.recvVal(g, me, X, 'blue')) / 2;
+  };
+  // 標準怪盜九九（2026-11-27 第三批）：殺人時機——X 已有兩張假情報、他死了算我的任務。
+  // 原情報如果是假情報，讓他死的是傳出者，不算我的（還少了一個目標）；用帽子戲法換過，換出來的情報讓他死就算我親手殺的。
+  // 先抽的那張也算進去（約四成是黑牌）；有兩張以上黑牌就只洗黑牌
+  R.maoziKill = function (g, me, X) {
+    if (X === me || g.counts(X).black < 2) return null;
+    var dv = AI.recvVal(g, me, X, 'black'); if (dv <= 20) return null;
+    var c = AI.knownColor(g, me), po = c ? (c === 'black' ? 1 : 0) : AI.evUnknown(g, me, g.transit).pBlack;
+    var nb = me.hand.filter(function (h) { return h.color === 'black'; }).length, pd = 0.4;
+    function pm(n) { var mixN = Math.max(2, n); return (Math.min(n, mixN) + po) / (mixN + 1); }
+    var P = (1 - pd) * pm(nb) + pd * pm(nb + 1);
+    var vt = (AI.recvVal(g, me, X, 'red') + AI.recvVal(g, me, X, 'blue')) / 2;
+    return (P * dv + (1 - P) * vt - R.STDA.mzCost) - (po * R.STDA.mzLose + (1 - po) * vt);
+  };
   R.aiMaozi = function (g, me, xs) {
     var c = AI.knownColor(g, me), X = g.players[xs];
-    if (c == null || me.hand.length < 1) return null;
+    if (me.hand.length < 1) return null;
+    if (me.identity === 'te' && stdA(me, 'amzkill')) { var kg = R.maoziKill(g, me, X); if (kg != null) return { gain: kg }; }
+    if (c == null && stdA(me, 'amaozi')) {   // 標準（2026-11-27 專屬打法）：看不到顏色也估；比原情報好的牌越多，洗混後越可能抽到想要的
+      var cu = R.maoziCur(g, me, X);
+      // 每用一次就有兩張以上手牌沉到牌庫底：只在殺人（他已有兩張假情報、死了算數）或擋人湊滿時用
+      if (!(g.counts(X).black >= 2 && AI.recvVal(g, me, X, 'black') > 20) && cu > -15) return null;
+      var vs = me.hand.map(function (h) { return AI.recvVal(g, me, X, h.color); }).sort(function (a, b) { return b - a; });
+      var take = vs.filter(function (v) { return v > cu; }); if (take.length < 2) take = vs.slice(0, 2); if (take.length < 2) take.push(0);
+      var sum = cu; take.forEach(function (v) { sum += v; });
+      return { gain: sum / (take.length + 1) - cu - 3 };
+    }
+    if (c == null) return null;
     var cur = AI.recvVal(g, me, X, c);
     var vals = me.hand.map(function (h) { return AI.recvVal(g, me, X, h.color); }).sort(function (a, b) { return b - a; });
     if (vals.length < 2) vals.push(0);
@@ -5642,12 +5877,21 @@ var FS = globalThis.FS || (globalThis.FS = {});
     ai: {
       resp: function (g, me, req) {
         var c = AI.knownColor(g, me), X = req.trig.actor;
+        if (c == null && stdA(me, 'atoulong')) {   // 標準：兩張假情報的人正要收情報——牌庫頂約一半是假情報，換過去就是我殺的
+          var Xp = g.players[X], dv = g.counts(Xp).black >= 2 ? AI.recvVal(g, me, Xp, 'black') : 0;
+          return dv > 20 ? { val: Math.min(35, 0.45 * dv - 4) } : null;
+        }
         if (c == null) return null;
         var cur = AI.recvVal(g, me, g.players[X], c);
         return cur < -8 ? { val: Math.min(30, -cur * 0.5) } : null;
       },
       cost: function (g, me, req) { return [R.worst(g, me, req.cards).id]; },
-      swap: function (g, me, req) { var X = g.players[req.trig.actor]; return AI.recvVal(g, me, X, req.cards[1].color) > AI.recvVal(g, me, X, req.cards[0].color); }
+      swap: function (g, me, req) {
+        var X = g.players[req.trig.actor];
+        // 標準：牌庫頂是假情報、他已有兩張、他死了算我的任務——就算原情報也是假的也換（換過去才算我親手殺的）
+        if (stdA(me, 'atoulong') && req.cards[1].color === 'black' && g.counts(X).black >= 2 && AI.recvVal(g, me, X, 'black') > 20) return true;
+        return AI.recvVal(g, me, X, req.cards[1].color) > AI.recvVal(g, me, X, req.cards[0].color);
+      }
     }
   });
   def('jinji', {
@@ -5686,6 +5930,8 @@ var FS = globalThis.FS || (globalThis.FS = {});
       var v = te ? (R.TE_RATE[id] || 20) / R.TE_PICK + g.rand() * 2 : (RATE[id] || 5) + g.rand() * 3;
       if (!best || v > best.v) best = { v: v, id: id };
     });
+    // 標準特工老金（2026-11-27）：【棄車保帥】要角色翻開才能用（每次自己收情報可以再從棄牌堆補一張不同顏色的），一開局就翻開
+    if (te && best.id === 'laojin' && stdA(me, 'alaojin')) return { role: best.id, hidden: false };
     return { role: best.id, hidden: S.RoleById[best.id].status };   // 狀態角色一律先面朝下：保密，也能先用【暴露】技能
   };
   R.aiAsk = function (g, me, req) {
@@ -5737,6 +5983,12 @@ var FS = globalThis.FS || (globalThis.FS = {});
   AI.respond = function (g, me, req) {
     var best = null;
     req = Object.assign({}, req, { options: req.options.filter(function (o) { return R.aiIntelOk(g, me, o); }) });
+    // 標準特工老鬼（2026-11-27）：死亡時要五張手牌，但量測到兩張假情報時手牌多半只有 1～4 張（別人回合每局約花掉 2.4 張響應牌）——
+    // 手牌不夠多時，別人的事不花手牌響應（就計用存著的情報不算）；跟自己有關的照常
+    if (me.identity === 'te' && me.role && R.mRole(me) === 'laogui' && stdA(me, 'alaogui') && me.hand.length <= R.STDA.lgHand) {
+      var mine = req.trig && (req.trig.actor === me.seat || (req.top && req.top.target === me.seat));
+      if (!mine) req = Object.assign({}, req, { options: req.options.filter(function (o) { return o.skill || o.src === 'intel'; }) });
+    }
     req.options.forEach(function (o) {
       var r = null;
       if (o.skill) { var d = SK[o.skill]; r = d.ai && d.ai.resp ? d.ai.resp(g, me, req) : null; if (r) r.ret = { type: 'skill', sk: o.skill }; }
@@ -5750,7 +6002,9 @@ var FS = globalThis.FS || (globalThis.FS = {});
     if (g.trace && best) g.tr({ t: 'ai', seat: me.seat, id: req.trig.id, kind: req.trig.kind, best: best.ret, val: Math.round(best.val * 10) / 10 });
     if (best && best.val >= 8) return best.ret;
     var cards = req.options.filter(function (o) { return !o.skill && !o.alt; });
-    var base = cards.length ? baseRespond(g, me, Object.assign({}, req, { options: cards })) : { type: 'pass' };
+    var tk = g.transit && g.transit.card ? g.transit.killer : (g.turn ? g.turn.seat : null), base;
+    me._otherKill = me.identity === 'te' && tk != null && tk !== me.seat;   // 這份情報讓人死，算傳出者（或轉移的人）的，不是我的
+    try { base = cards.length ? baseRespond(g, me, Object.assign({}, req, { options: cards })) : { type: 'pass' }; } finally { me._otherKill = false; }
     if (base && base.type !== 'pass') return base;
     return best ? best.ret : { type: 'pass' };
   };
@@ -5949,7 +6203,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
   R.deathWins = function (g, me) {   // 求死型：現在死亡就完成任務
     var r = R.mRole(me);
     if (r === 'fuping') return mc(g, me).t >= 3;
-    if (r === 'laogui') return me.hand.length >= 5;
+    if (r === 'laogui') return me.hand.length - (me._lgPlan ? 1 : 0) >= 5;   // 自己傳情報前估算時，傳出那張已經不在手上（2026-11-27）
     if (r === 'xiaobai') return !g.deaths.length && me.intel.length + 1 < 6;
     return false;
   };
@@ -5971,7 +6225,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
     if (R.noDeath(me)) return g.deaths.length ? 3 : -70;   // 已經有人死了，任務本來就不可能
     if (role === 'huangque') return via === 'huangque' ? 90 : -5;   // 用一般情報殺掉不算，還少了一個目標
     if (role === 'xiaobai' && !g.deaths.length) return -50;   // 別人先死，小白就不可能是第一個
-    if (kind === 'kill') { var p = R.killOk(g, me, q); return p * 90 + 3; }
+    if (kind === 'kill') { var p = R.killOk(g, me, q); return p > 0 || !stdA(me, 'awaste') ? p * 90 + 3 : R.STDA.waste; }   // 標準：殺了不算任務的人不加分
     if (role === 'heimeigui') return kq.t >= 1 ? (g.deaths.some(function (d) { return d.seat !== me.seat && d.trueIntel >= 1; }) ? 85 : 30) : 3;
     if (role === 'liujie' || role === 'shanling') return kq.t < 2 ? 85 : 3;
     if (role === 'lifu') return me.flags.nemesis === q.seat ? 85 : 3;
@@ -6008,9 +6262,27 @@ var FS = globalThis.FS || (globalThis.FS = {});
     return (1 - pt) * Math.max(vr, vb);
   };
   function bcost(k) { return k >= 2 ? 90 : (k === 1 ? 7 : 3); }
+  // 標準特工（2026-11-27，使用者：「接著做特工」「避免過度失誤」）：
+  // 量測（work/ab_agent.js、agentblunder）：特工非任務死亡大多是「已有兩張假情報時被鎖定逼收」或被技能直接塞假情報；
+  // 也會把真情報送到快湊滿的陣營玩家手上（任何陣營獲勝＝特工輸）
+  R.STDA = { self2: 16, self1: 4, feed: 1.3, campKill: 55, die0: 15, die1: 30, waste: -2, keepBlk: 0, lgHand: 6, kzy: 15, fpFirst: 0, mzCost: 4, mzLose: 0, lostT: 15 };   // keepBlk：怪盜九九留黑牌，試過 10、25 都變差（黑牌要先送出去把目標推到兩張），0＝不用
+  function stdA(me, key) { return AI.stdOn && AI.stdOn(me, key || 'agent'); }
+  // 他湊滿的威脅：照他面前的顏色猜陣營（公開資訊）
+  function campNear(g, me, q) {
+    var x = mc(g, q), pr = 1 / (1 + Math.exp(-(x.r - x.b) * 0.9)), kn = R.known(g, me, q.seat);
+    if (kn === 'qian') pr = 1; else if (kn === 'jun') pr = 0; else if (kn === 'te') return 0;
+    return (1 - R.pTe(g, me, q)) * (pr * (x.r + x.d >= 2 ? 1 : 0) + (1 - pr) * (x.b + x.d >= 2 ? 1 : 0));
+  }
   R.agentRecv = function (g, me, q, c) {
     var k = mc(g, q);
     if (q === me) {
+      if (c === 'black' && stdA(me, 'adie') && KIND[R.mRole(me)] === 'die') {   // 標準求死型：條件達成就主動收假情報；還沒達成時別先停在兩張（被逼收第三張就白死）
+        if (R.deathWins(g, me)) return k.k >= 2 ? 95 : (k.k === 1 ? R.STDA.die1 : R.STDA.die0);
+        if (R.mRole(me) === 'laogui') return k.k >= 2 ? -90 : (k.k === 1 ? (me.hand.length >= R.STDA.lgHand ? 4 : -14) : 6);   // 老鬼：第一張照收；第二張要等手牌夠多（停在兩張時手牌少會被鎖定殺死，算白死）
+        return k.k >= 2 ? -90 : (k.k === 1 ? -14 : 2);
+      }
+      // 湊色型不用（2026-11-27 第三批：9 個湊色型關掉平均 +1.0 點，例如老槍 20.3→22.3、貝雷帽 20.9→22.3——太怕假情報就少收了真情報；殺人型、觀察型有沒有都一樣）
+      if (c === 'black' && stdA(me, 'aself') && KIND[R.mRole(me)] !== 'collect' && !(k.k >= 2 && R.deathWins(g, me))) return k.k >= 2 ? -90 : -(k.k === 1 ? R.STDA.self2 : R.STDA.self1);   // 標準：別讓自己停在兩張假情報（容易被鎖定、技能殺死）
       if (c === 'black') return k.k >= 2 && R.deathWins(g, me) ? 95 : -bcost(k.k);
       var v = k.t >= 5 ? 85 : (k.t >= 4 ? 8 : 2);   // 六張真情報（雙色只算一張）
       v += R.collectGain(g, me, c);
@@ -6018,14 +6290,30 @@ var FS = globalThis.FS || (globalThis.FS = {});
       return v;
     }
     if (c === 'black') {
-      if (k.k >= 2) return R.deathValue(g, me, q);
+      if (k.k >= 2) {
+        var dq = R.deathValue(g, me, q);
+        // 標準殺人型（2026-11-27 第三批）：別人送的情報讓他死不算我的，還少了一個目標（量測：合格目標被別人殺掉的次數是自己殺的 1.6～3 倍）
+        if (me._otherKill && dq > 20 && KIND[R.mRole(me)] === 'kill' && stdA(me, 'asteal')) return -R.STDA.lostT;
+        return dq;
+      }
       if (R.noDeath(me) && !g.deaths.length) return -2;
       // 先把「死了算數」的目標養到兩張假情報，之後才殺得到（M4）
       var dv = R.deathValue(g, me, q, R.mRole(me) === 'huangque' ? 'huangque' : null);
       return dv > 20 ? (k.k === 1 ? 7 : 4) : 1;
     }
     var thr = R.campThreat(g, me, q, c);
+    if (stdA(me, 'afeed') && !R.otherWinReady(g, me)) return -thr * R.STDA.feed;   // 標準：更提防把真情報送到快湊滿的人手上
     return R.otherWinReady(g, me) ? thr * 0.6 : -thr * 0.8;
+  };
+  // 標準特工：快湊滿的陣營玩家，就算殺他不是任務也值得殺（任何陣營獲勝特工都輸）；老槍、鋼鐵特工不能有人死亡除外
+  var agentRecvBase = R.agentRecv;
+  R.agentRecv = function (g, me, q, c) {
+    var v = agentRecvBase(g, me, q, c);
+    if (c === 'black' && q !== me && stdA(me, 'akill') && !(R.noDeath(me) && !g.deaths.length) && !R.otherWinReady(g, me)) {
+      var k = mc(g, q), near = campNear(g, me, q);
+      if (near > 0) v += near * (k.k >= 2 ? R.STDA.campKill : (k.k === 1 ? R.STDA.campKill * 0.15 : 0));
+    }
+    return v;
   };
 
   // ---------- 一般玩家對付特工（只用公開資訊：角色卡面、情報數、手牌數、死亡紀錄）----------
@@ -6073,6 +6361,11 @@ var FS = globalThis.FS || (globalThis.FS = {});
   var baseEvU = AI.evUnknown;
   AI.evUnknown = function (g, me, t) {   // 蓋著的情報：拒收會退回（直達一定、密電要大家都拒收）到可能差一張的特工手上，拒收的價值扣掉
     var e = baseEvU(g, me, t);
+    // 標準特工（2026-11-27）：收下的價值改用自己的任務估值（新手沿用陣營公式：固定的假情報代價，不看任務——求死型想要假情報、湊色型想要特定顏色都沒算進去）
+    if (me.identity === 'te' && me.role && stdA(me, 'aarrive') && R.mRole(me) !== 'laogui' && R.mRole(me) !== 'fuping') {   // 老鬼（死時要五張手牌）、浮萍（死時要三張真情報）照原本的判斷：用任務估值反而變差（老鬼 13%→10～12%、浮萍約 24%→19%：條件還沒達成就太早收假情報）
+      var pb = e.pBlack, vt = (R.agentRecv(g, me, me, 'red') + R.agentRecv(g, me, me, 'blue')) / 2;
+      return Object.assign({}, e, { accept: pb * R.agentRecv(g, me, me, 'black') + (1 - pb) * vt });
+    }
     if (me.identity === 'te' || !g.pool.te) return e;
     var risk = R.bounceRisk(g, me, g.players[t.sender], null) * (t.mode === 'zhi' ? 1 : 0.25);
     return risk > 0 ? Object.assign({}, e, { reject: e.reject - risk }) : e;
@@ -6129,11 +6422,37 @@ var FS = globalThis.FS || (globalThis.FS = {});
     });
     return best ? best.seat : null;
   };
+  // 標準怪盜九九（2026-11-27）：帽子戲法要有黑牌才殺得到人（量測：合格目標正在收情報 575 次，手上有兩張以上黑牌只有 31 次）——
+  // 手上黑牌不到三張時，傳情報優先用別的牌（分數差不多才換）
+  var planBase = AI.planIntel;
+  AI.planIntel = function (g, me, opts, locked, knows) {
+    if (me.identity === 'te' && R.mRole(me) === 'laogui' && stdA(me, 'alaogui') && !me._lgPlan) {   // 老鬼：傳回自己手上時，手牌已經少了傳出的那張
+      me._lgPlan = true;
+      try { return AI.planIntel(g, me, opts, locked, knows); } finally { me._lgPlan = false; }
+    }
+    var best = planBase(g, me, opts, locked, knows);
+    if (!best || me.identity !== 'te' || R.mRole(me) !== 'guaidao' || !stdA(me, 'akeepblk')) return best;
+    var bc = me.hand.filter(function (c) { return c.color === 'black'; }).length, card = AI.card(g, me, best.cardId);
+    if (!card || card.color !== 'black' || bc > 2) return best;
+    var alt = planBase(g, me, opts.filter(function (o) { var c = AI.card(g, me, o.cardId); return c && c.color !== 'black'; }), locked, knows);
+    return alt && alt.score > best.score - R.STDA.keepBlk ? alt : best;
+  };
   var agentArrive = AI.arrive;
   AI.arrive = function (g, me, req) {
     if (me.identity === 'te' && me.role && R.deathWins(g, me)) {   // 求死型：條件到了就收下任何情報
       var c = AI.knownColor(g, me);
       if (c == null || c === 'black') return { type: 'accept' };
+    }
+    // 標準特工（2026-11-27）：轉移殺人——情報到我面前、有人已有兩張假情報而且他死了算我的任務：轉給他（用轉移的人才算親手殺的）。
+    // 原本特工把每個人都當敵人，轉移的對象等於隨便挑（座位最前面的那個）
+    if (me.identity === 'te' && me.role && stdA(me, 'akzy')) {
+      var zy = req.uses.filter(function (u) { return u.name === 'zhuanyi'; })[0], kt = zy ? R.killTarget(g, me, zy.targets) : null;
+      if (kt != null) {
+        var kc = AI.knownColor(g, me), Q = g.players[kt], dv = R.deathValue(g, me, Q);
+        var pb = kc ? (kc === 'black' ? 1 : 0) : AI.evUnknown(g, me, g.transit).pBlack;
+        var vt = (AI.recvVal(g, me, Q, 'red') + AI.recvVal(g, me, Q, 'blue')) / 2;
+        if (pb > 0.35 && pb * dv + (1 - pb) * vt > R.STDA.kzy) return { type: 'use', cardId: zy.cardId, target: kt };
+      }
     }
     return agentArrive(g, me, req);
   };
@@ -6357,7 +6676,9 @@ var FS = globalThis.FS || (globalThis.FS = {});
   // 卡牌＝整張卡圖縮小。secret＝試探、秘密下達在旁觀者眼中：蓋住下半部的身分對應
   UI.cardEl = function (c, cls, secret) {
     var e = el('div', 'card c-' + c.color + (secret ? ' secret' : '') + (cls ? ' ' + cls : ''),
-      '<div class="art" style="background-image:url(' + S.asset('assets/cards/full/' + pad(c.id) + '.webp') + ')"></div>');
+      '<div class="art" style="background-image:url(' + S.asset('assets/cards/full/' + pad(c.id) + '.webp') + ')"></div>' +
+      // 角標：情報顏色＋傳遞方式（手機版手牌小，牌面上的小圖示看不清；2026-11-27 使用者選「6 項全修」）
+      (secret ? '' : '<div class="cbadge cb-' + c.color + '"><b>' + S.MODE_TEXT[c.send].charAt(0) + '</b>' + (c.turn ? '<i>⇄</i>' : '') + (c.lock ? '<i>鎖</i>' : '') + '</div>'));
     e.dataset.tip = (secret ? 's' : 'c') + c.id;
     return e;
   };
@@ -6577,7 +6898,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
     var cx0 = L ? m + fw : 0, cx1 = R ? W - m - fw : W, cy0 = T ? m + fh : 0, cy1 = H;
     UI.center = { x0: cx0, x1: cx1, y0: cy0, y1: cy1 };
     var mid = (cx0 + cx1) / 2;
-    $('played').style.left = mid + 'px'; $('played').style.top = ((cy0 + cy1 - 70) / 2) + 'px';   // 上排與下方提示之間的正中
+    $('played').style.left = mid + 'px'; $('played').style.top = ((cy0 + cy1 - (V.mob ? 48 : 70)) / 2) + 'px';   // 上排與下方提示之間的正中（手機版提示只有一行）
     $('toast').style.left = mid + 'px'; $('toast').style.top = (cy0 + (cy1 - cy0) * 0.3) + 'px'; $('toast').style.maxWidth = Math.max(420, cx1 - cx0 - 20) + 'px';
     $('prompt').style.left = mid + 'px'; $('prompt').style.maxWidth = Math.max(420, cx1 - cx0 - 24) + 'px';
     $('gridpick').style.left = mid + 'px';
@@ -7071,7 +7392,11 @@ var FS = globalThis.FS || (globalThis.FS = {});
       b.appendChild(x);
     });
   };
-  UI.prompt = function (html, mine) { var p = $('prompt'); p.innerHTML = html || ''; p.classList.toggle('mine', !!mine); };
+  UI.prompt = function (html, mine) {
+    var p = $('prompt');
+    if (V.mob && html) html = String(html).replace(/<br\s*\/?>/gi, '　');   // 手機版牌桌中央矮：提示接成一行（放不下才自然換行），讓出空間給桌上的牌與指示線（2026-11-27）
+    p.innerHTML = html || ''; p.classList.toggle('mine', !!mine);
+  };
   UI.renderDeck = function () {
     var g = UI.game;
     var dn = Math.max(0, g.discard.length - UI.pileHold);
@@ -7318,7 +7643,8 @@ var FS = globalThis.FS || (globalThis.FS = {});
   UI.gridPick = function (title, items, buttons, note) {
     return new Promise(function (resolve) {
       var box = $('gridpick');
-      function close(v) { box.classList.add('hidden'); box.innerHTML = ''; UI.hideTip(); resolve(v); }
+      function close(v) { box.classList.add('hidden'); box.innerHTML = ''; box.classList.remove('single'); UI.hideTip(); resolve(v); }
+      box.classList.toggle('single', items.length === 1);
       box.innerHTML = '<div class="gp-title">' + title + '</div>' + (note ? '<div class="gp-note">' + note + '</div>' : '');
       var grid = el('div', 'gp-grid');
       grid.style.gridTemplateColumns = 'repeat(' + Math.max(1, Math.min(items.length, 6)) + ', auto)';
@@ -8174,7 +8500,39 @@ var FS = globalThis.FS || (globalThis.FS = {});
   };
 
   // ---------- 開始一局 ----------
+  // ---------- 字太長時自動縮小（2026-11-27 手機版：「進入情報傳遞」「響應：帽子戲法」超出按鈕、特工任務第三行被切掉）----------
+  UI.fitText = function () {
+    UI._fitQ = 0;
+    var bs = document.querySelectorAll('#stage .btn');
+    for (var i = 0; i < bs.length; i++) {
+      var b = bs[i];
+      if (!b.offsetParent) continue;
+      if (b.style.fontSize) { b.style.fontSize = ''; b.style.letterSpacing = ''; }
+      if (b.scrollWidth <= b.clientWidth + 1) continue;
+      var fs = parseFloat(getComputedStyle(b).fontSize), k = Math.max(0.55, (b.clientWidth - 2) / b.scrollWidth);
+      b.style.letterSpacing = '0'; b.style.fontSize = (fs * k).toFixed(1) + 'px';
+      for (var gd = 0; gd < 6 && k > 0.55 && b.scrollWidth > b.clientWidth + 1; gd++) { k *= 0.93; b.style.fontSize = (fs * k).toFixed(1) + 'px'; }
+    }
+    var nt = document.querySelector('#me .me-note');
+    if (nt && nt.offsetParent) {
+      if (nt.style.fontSize) nt.style.fontSize = '';
+      if (nt.scrollHeight > nt.clientHeight + 1) {
+        var f0 = parseFloat(getComputedStyle(nt).fontSize), k2 = 1;
+        while (k2 > 0.64 && nt.scrollHeight > nt.clientHeight + 1) { k2 -= 0.06; nt.style.fontSize = (f0 * k2).toFixed(1) + 'px'; }
+      }
+    }
+  };
+  UI.fitSoon = function () { if (!UI._fitQ) UI._fitQ = requestAnimationFrame(UI.fitText); };
+  UI.fitWatch = function () {
+    if (UI._fitObs || !window.MutationObserver) return;
+    UI._fitObs = new MutationObserver(function (ms) {   // 特效層的變動不用管（量很大，又沒有按鈕）
+      for (var i = 0; i < ms.length; i++) { var t = ms[i].target, e = t.nodeType === 1 ? t : t.parentElement; if (e && !(e.closest && e.closest('#fx'))) { UI.fitSoon(); return; } }
+    });
+    UI._fitObs.observe($('stage'), { childList: true, subtree: true, characterData: true });
+    window.addEventListener('resize', UI.fitSoon);
+  };
   UI.init = function (g, o) {
+    UI.fitWatch();
     UI.game = g; UI.me = o.humanSeat; UI.guess = {}; UI.pending = null; UI.handState = null; UI.tgt = UI.tgtIntel = null;
     $('log').innerHTML = ''; $('modal').classList.add('hidden'); $('modal').innerHTML = ''; $('toast').classList.add('hidden'); $('toast').classList.remove('wait');
     if (UI.toastWaitKey) { document.removeEventListener('keydown', UI.toastWaitKey, true); UI.toastWaitKey = null; }   // 上一局還停在說明框就離開了
@@ -9268,7 +9626,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
   var UI = S.UI, V = window.FSView, Main = S.Main = { game: null };
   function $(id) { return document.getElementById(id); }
   var KEY = 'fs-html-settings';
-  var set = { players: 5, markers: 1, roles: 1, agents: 1, start: 'random', speed: 1.3, vol: 0.5, voice: 0.8, voiceKeep: 0.8, mute: false, poyiMine: false, speedV2: false };   // voice＝語音音量（0＝關）   // 電腦反應預設 1.3 秒（使用者 2026-11-26）
+  var set = { players: 5, markers: 1, roles: 1, agents: 1, start: 'random', speed: 1.3, vol: 0.5, voice: 0.8, voiceKeep: 0.8, ai: 'standard', mute: false, poyiMine: false, speedV2: false };   // voice＝語音音量（0＝關）   // 電腦反應預設 1.3 秒（使用者 2026-11-26）
   function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 不能存就算了 */ } }
   function load() {
@@ -9293,7 +9651,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
   function refresh() {
     if (!+set.roles && NOVICE_N.indexOf(String(set.players)) < 0) { set.players = Math.min(8, (+set.players || 5) + 1); save(); }   // 3、5、7 人往上一格
     Array.prototype.forEach.call($('opt-players').children, function (b) { b.classList.toggle('hidden', !+set.roles && NOVICE_N.indexOf(b.dataset.v) < 0); });
-    [['opt-players', 'players'], ['opt-markers', 'markers'], ['opt-roles', 'roles'], ['opt-agents', 'agents'], ['opt-start', 'start']].forEach(function (x) {
+    [['opt-players', 'players'], ['opt-markers', 'markers'], ['opt-roles', 'roles'], ['opt-agents', 'agents'], ['opt-start', 'start'], ['opt-ai', 'ai']].forEach(function (x) {
       Array.prototype.forEach.call($(x[0]).children, function (b) { b.classList.toggle('on', String(set[x[1]]) === b.dataset.v); });
     });
     $('note-players').textContent = agentsOn() ? NOTE_TE[set.players] : NOTE[set.players];
@@ -9385,7 +9743,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
     $('modal').classList.add('hidden');
     var g = new S.Game({ players: (over && over.players) || +set.players, markers: !!+set.markers, roles: !!+set.roles, agents: agentsOn(), humanSeat: 0, startSeat: set.start });
     g.setup();
-    g.players.forEach(function (p) { p.ctrl = p.human ? UI.controller : S.AI.controller; });
+    g.players.forEach(function (p) { p.ctrl = p.human ? UI.controller : S.AI.controller; if (!p.human) p.aiLevel = set.ai === 'novice' ? 'novice' : 'standard'; });   // 電腦難度
     S.AI.attach(g);
     Main.game = g;
     show('game');
@@ -9431,8 +9789,8 @@ var FS = globalThis.FS || (globalThis.FS = {});
     if (UI.tut) { S.Tut.menu(); return; }   // 教學關：重來、卡牌一覽、離開
     UI.modal('<h2>選單</h2><p>電腦反應速度、音樂音量、語音音量在主選單調整。</p>',
       [{ label: '繼續遊戲', cls: 'primary', value: 'go' }, { label: '規則說明', value: 'rules' }, { label: '角色攻略', value: 'guide' }, { label: '卡牌一覽', value: 'cards' }, { label: set.mute ? '♪ 打開音樂' : '♪ 關閉音樂', value: 'mute' }, { label: set.voice > 0 ? '🗣 關閉語音' : '🗣 打開語音', value: 'voice' }]
-        .concat(V.mob ? [{ label: (set.poyiMine ? '☑' : '☐') + ' 只在情報傳到自己時才詢問破譯', value: 'poyi' }] : [])   // 手機版：勾選框不放在牌桌下緣（容易誤觸）
-        .concat([{ label: '重新開始', value: 'again' }, { label: '回主選單', value: 'menu' }])).then(function (v) {
+        .concat(V.mob ? [{ label: (set.poyiMine ? '☑' : '☐') + ' 只在情報傳到自己時才詢問破譯', value: 'poyi', cls: 'wide' }] : [])   // 手機版：勾選框不放在牌桌下緣（容易誤觸）
+        .concat([{ label: '重新開始', value: 'again' }, { label: '回主選單', value: 'menu' }]), { cls: 'gmenu' }).then(function (v) {
         if (v === 'again') Main.start(); else if (v === 'menu') Main.toMenu();
         else if (v === 'poyi') { set.poyiMine = !set.poyiMine; save(); refresh(); UI.onPoyiMine(); resume(); }
         else if (v === 'rules') Main.rules().then(resume);
@@ -9451,7 +9809,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
   document.addEventListener('DOMContentLoaded', function () {
     var bgm = $('bgm'); if (bgm.dataset.src) bgm.src = S.asset(bgm.dataset.src);   // 離線單檔版：背景音樂從內嵌資料播放
     load();
-    seg('opt-players', 'players', Number); seg('opt-markers', 'markers', Number); seg('opt-roles', 'roles', Number); seg('opt-agents', 'agents', Number); seg('opt-start', 'start', String);
+    seg('opt-players', 'players', Number); seg('opt-markers', 'markers', Number); seg('opt-roles', 'roles', Number); seg('opt-agents', 'agents', Number); seg('opt-start', 'start', String); seg('opt-ai', 'ai', String);
     $('opt-speed').addEventListener('input', function () { set.speed = +this.value; save(); refresh(); });
     $('opt-vol').addEventListener('input', function () { set.vol = +this.value; if (set.vol > 0) set.mute = false; save(); refresh(); tryPlay(); });
     $('opt-voice').addEventListener('input', function () { set.voice = +this.value; save(); refresh(); });
