@@ -2279,7 +2279,7 @@ html.mob #dirpick .dp-center { gap: 5px; padding: 6px 18px; }
             </div>
             <div class="menu-field">
               <span class="mlab" id="ai-label">電腦難度</span>
-              <div class="seg" id="opt-ai" role="group" aria-labelledby="ai-label"><button data-v="standard" title="攻防與判斷比較強，一樣看不到別人的牌">標準</button><button data-v="novice" title="原本的電腦">新手</button></div>
+              <div class="seg" id="opt-ai" role="group" aria-labelledby="ai-label"><button data-v="novice" title="基礎攻防與身分推理">新手</button><button data-v="standard" title="加強攻防與身分推理">標準</button><button data-v="expert" title="依身分選角，會用鎖定和轉移協助隊友宣勝">專家</button></div>
             </div>
           </div>
         </div>
@@ -2359,7 +2359,7 @@ FS.ASSETS = {"assets/cards/back.webp":{"type":"image/webp","b64":"UklGRvQ4AABXRU
 var FS = globalThis.FS || (globalThis.FS = {});
 (function (S) {
   'use strict';
-  S.VERSION = '0.3.22';
+  S.VERSION = '0.3.24';
   // 素材路徑：資料夾版直接用 assets/ 的檔案；離線單檔版（work/build_single.py 產生）把素材內嵌在 S.ASSETS，
   // 第一次用到時轉成記憶體裡的圖片網址（blob:），之後重複使用。所有在程式裡拼出來的素材路徑都要經過這裡。
   var blobs = {};
@@ -3510,7 +3510,8 @@ var FS = globalThis.FS || (globalThis.FS = {});
   function blackCost(k) { var t = AI.BLACKCOST; return k >= 2 ? t[2] : (k === 1 ? t[1] : t[0]); }
   // 電腦難度（使用者 2026-11-27）：新手＝原本的電腦（一行都不改）；標準＝加強攻防與判斷，一樣不作弊。
   // 玩家的 aiLevel 沒設定時一律當新手，所以既有的測試與量測工具不受影響
-  AI.std = function (me) { return me.aiLevel === 'standard'; };
+  AI.expert = function (me) { return me.aiLevel === 'expert'; };
+  AI.std = function (me) { return me.aiLevel === 'standard' || AI.expert(me); };
   AI.card = function (g, me, id) { return g.findUsable ? g.findUsable(me, id) : g.findHand(me, id); };   // 包含就計可用的情報
   AI.FUNC = { shipo: 6, jimi: 6, suoding: 5.5, zhuanyi: 5.5, jiehuo: 5, shaohui: 5, diaohu: 4.5, zengyuan: 4, lijian: 4, weixian: 4, diaobao: 3.5, poyi: 3.5, mimi: 3, shitan: 3, gongkai: 2 };
 
@@ -3722,8 +3723,13 @@ var FS = globalThis.FS || (globalThis.FS = {});
       return bv;
     }
     var v = 0;
-    if (c === col || c === 'dual') v += pa * ownVal(k[col] + k.dual);
-    if (c === en || c === 'dual') v -= (1 - pa) * ownVal(k[en] + k.dual);
+    var enemy = 1 - pa, finish = 0;
+    if (AI.expert(me) && me.identity !== 'te') {
+      finish = 120;
+      if (q !== me && S.R && g.pool.te) enemy = Math.max(0, enemy - S.R.pTe(g, me, q));
+    }
+    if (c === col || c === 'dual') v += pa * (ownVal(k[col] + k.dual) + (k[col] + k.dual >= 2 ? finish : 0));
+    if (c === en || c === 'dual') v -= enemy * (ownVal(k[en] + k.dual) + (k[en] + k.dual >= 2 ? finish : 0));
     if (c === col) v -= (1 - pa);
     return v;
   };
@@ -3771,6 +3777,10 @@ var FS = globalThis.FS || (globalThis.FS = {});
   // 我傳出的情報，q 會接收的機率（我的估計）。蓋著的情報：假設對方用同一套想法，而且只看得到公開的情報數
   function accProb(g, me, q, c, faceUp, mode, knows) {
     var pa = mine(g, me, q.seat);
+    if (c === 'black' && AI.deathMissionRisk) {
+      var risk = AI.deathMissionRisk(g, me, q, 1);
+      if (risk > 0) return risk + (1 - risk) * (faceUp ? 0.02 : 0.35);
+    }
     // 他知道這份情報的顏色（下秘密下達暗號的人）：真情報他多半收下（暗號就是他要的顏色），假情報不收（2026-11-26）
     if (knows && knows[q.seat] != null) return c === 'black' ? 0.03 : 0.9;
     if (faceUp) {
@@ -3818,6 +3828,8 @@ var FS = globalThis.FS || (globalThis.FS = {});
       var c = AI.card(g, me, o.cardId);
       var noise = ((c.id * 7919 + g.turnNo * 104729 + me.seat * 31) % 100) / 100 * 0.6;
       var base = -AI.FUNC[c.name] * 0.25 + noise;
+      if (AI.expert(me) && ['jiehuo', 'diaohu', 'shipo', 'diaobao'].indexOf(c.name) >= 0 &&
+          !me.hand.some(function (card) { return card.id !== c.id && card.name === c.name; })) base -= 8;
       o.modes.forEach(function (mode) {
         var list = mode === 'zhi' ? o.targets.map(function (t) { return { target: t, dir: 1 }; }) : o.dirs.map(function (d) { return { dir: d, target: null }; });
         list.forEach(function (x) {
@@ -3842,10 +3854,15 @@ var FS = globalThis.FS || (globalThis.FS = {});
   };
   // 我拒收這張（已知是假情報）之後，第一個一定得收下的人是不是已有兩張假情報的隊友
   AI.rejectHurtsAlly = function (g, me, t) {
-    var hurts = function (s) { var q = g.players[s]; return q.alive && q !== me && AI.pAlly(g, me, s) > 0.7 && g.counts(q).black >= 2; };
+    var hurts = function (s) {
+      var q = g.players[s];
+      return q.alive && q !== me && g.counts(q).black >= 2 &&
+        (AI.pAlly(g, me, s) > 0.7 || (AI.killRisk && AI.killRisk(g, me, q, 1) >= 0.08));
+    };
     if (t.mode === 'zhi') return hurts(t.sender);   // 直達被拒收：回到傳出者
     var s = g.next(me.seat, t.dir), guard = 0;
     while (s !== me.seat && guard++ < 10) {
+      if (AI.killRisk && AI.killRisk(g, me, g.players[s], 1) >= 0.08) return true;
       if (g.turn.locked.has(s) && s !== t.sender) return hurts(s);   // 被鎖定的人不能拒收
       if (s === t.sender) return hurts(s);                             // 繞回傳出者：他必須收下
       s = g.next(s, t.dir);
@@ -3932,6 +3949,20 @@ var FS = globalThis.FS || (globalThis.FS = {});
     var a = mine(g, me, E.user), T = asTarget != null ? asTarget : E.target, t = g.transit;
     var b = T == null ? 0.5 : mine(g, me, T), kT = T == null ? null : g.counts(g.players[T]);
     var X = trig && (trig.kind === 'accept') ? trig.actor : null, c = AI.knownColor(g, me);
+    // 專家判斷要不要識破／離間時，比較改向前後實際會收情報的人。
+    if (AI.expert(me) && t && t.card) {
+      var from, to, weight = 1;
+      if (E.name === 'zhuanyi' && T != null) { from = E.user; to = T; }
+      if (E.name === 'jiehuo' && X != null) { from = X; to = E.user; }
+      if (E.name === 'diaohu' && X != null) {
+        from = X; to = t.mode === 'zhi' ? t.sender : g.next(X, t.dir);
+        if (to !== t.sender && !g.turn.locked.has(to)) weight = 0.55;
+      }
+      if (from != null) {
+        var dist = colorDist(g, me, t, g.players[from], trig);
+        return (evRecv(g, me, g.players[from], dist) - weight * evRecv(g, me, g.players[to], dist)) * 0.65;
+      }
+    }
     switch (E.name) {
       case 'suoding': return (b - a) * (kT.black >= 2 ? AI.LOCK_LETHAL : 5 + 3 * kT.black);   // 鎖定已有兩張假情報的人＝準備送他第三張（2026-11-26 防特工殺人）
       case 'weixian': return (b - a) * 3;
@@ -4051,9 +4082,15 @@ var FS = globalThis.FS || (globalThis.FS = {});
       if (sd) {
         var bestL = null, rest = o.intel.filter(function (x) { return x.cardId !== sd.cardId; });
         if (rest.length) sd.targets.forEach(function (s) {
-          if (!AI.foe(g, me, s)) return;   // 只鎖定有把握是敵人的
+          var allyFinish = AI.expert(me) && me.identity !== 'te' && AI.pAlly(g, me, s) > 0.9 &&
+            g.counts(g.players[s])[myCol(me)] + g.counts(g.players[s]).dual >= 2;
+          if (!allyFinish && !AI.foe(g, me, s)) return;
           var L2 = new Set(locked); L2.add(s);
           var p2 = AI.planIntel(g, me, rest, L2);
+          if (allyFinish && p2) {
+            var color = AI.card(g, me, p2.cardId).color;
+            if (color !== myCol(me) && color !== 'dual') return;
+          }
           if (p2 && (!bestL || p2.score > bestL.score)) { bestL = p2; bestL.lock = s; }
         });
         if (bestL && bestL.score - 1 > best.score) return { type: 'use', cardId: sd.cardId, target: bestL.lock };
@@ -4067,14 +4104,33 @@ var FS = globalThis.FS || (globalThis.FS = {});
     var t = g.transit, m = g.aiMem[me.seat], c = AI.knownColor(g, me), k = g.counts(me), col = myCol(me);
     var zy = req.uses.filter(function (u) { return u.name === 'zhuanyi'; })[0];
     var py = req.uses.filter(function (u) { return u.name === 'poyi'; })[0];
-    var foe = zy ? leastAlly(g, me, zy.targets) : null;
+    var foe = zy ? leastAlly(g, me, zy.targets, function (q) {
+      return (c && c !== 'black') || !AI.killRisk || AI.killRisk(g, me, q, 1) < 0.08;
+    }) : null;
     var intent = m.intent && m.intent.tid === t.id ? m.intent : null;
     if (c == null && py && (req.canReject || zy)) {
       var pS = mine(g, me, t.sender);
       if (k.black >= 1 || (pS > 0.15 && pS < 0.85)) return { type: 'use', cardId: py.cardId };
     }
     if (c != null) {
+      if (zy && AI.expert(me) && c !== 'black') {
+        var bestSeat = null, bestValue = Math.max(30, AI.recvVal(g, me, me, c) + 12);
+        zy.targets.forEach(function (seat) {
+          var value = AI.recvVal(g, me, g.players[seat], c);
+          if (value > bestValue) { bestValue = value; bestSeat = seat; }
+        });
+        if (bestSeat != null) return { type: 'use', cardId: zy.cardId, target: bestSeat };
+      }
       if (c === 'black') {
+        if (zy && AI.expert(me)) {
+          var target = null, targetValue = 3;
+          zy.targets.forEach(function (seat) {
+            if (!AI.foe(g, me, seat)) return;
+            var value = AI.recvVal(g, me, g.players[seat], 'black');
+            if (value > targetValue) { targetValue = value; target = seat; }
+          });
+          if (target != null) return { type: 'use', cardId: zy.cardId, target: target };
+        }
         if (zy && foe && AI.foe(g, me, foe.seat)) return { type: 'use', cardId: zy.cardId, target: foe.seat };
         // 拒收前先看它會傳到誰：會不會又落到我想保護、而且已有兩張假情報的隊友手上（被鎖定、或傳回傳出者）。
         // 會的話自己收下（例如截獲來救隊友，不能截獲後又拒收送回去）（2026-11-26）
@@ -4118,6 +4174,12 @@ var FS = globalThis.FS || (globalThis.FS = {});
     var hasMove = req.options.some(function (o) { return o.name === 'jiehuo' || o.name === 'diaohu'; });
     req.options.forEach(function (o) {
       var X, pX, kX, pS, v;
+      if (trig.kind === 'accept' && c === 'black' && (o.name === 'jiehuo' || o.name === 'diaohu') &&
+          AI.killRisk && AI.killRisk(g, me, g.players[trig.actor], 1) >= 0.08) {
+        if (o.name === 'jiehuo' && k.black < 2) consider(o, 100, { intent: true });
+        if (o.name === 'diaohu' && (t.mode !== 'zhi' || (t.sender !== trig.actor &&
+            AI.recvVal(g, me, g.players[t.sender], 'black') >= -30))) consider(o, 105);
+      }
       switch (o.name) {
         case 'shipo': consider(o, AI.harm(g, me, top, trig) - 3); break;
         case 'lijian': {
@@ -5731,11 +5793,14 @@ var FS = globalThis.FS || (globalThis.FS = {});
         var lk = req.cards.filter(function (c) { return c.lock; })[0];
         return [(lk || req.cards[0]).id];
       },
-      target: function (g, me, req) { var t = R.aiXueranTarget(g, me, req.seats); return t == null ? req.seats.filter(function (s) { return s !== me.seat; })[0] : t; }
+      target: function (g, me, req) { return R.aiXueranTarget(g, me, req.seats); }
     }
   });
   R.aiXueranTarget = function (g, me, seats) {
-    var k = R.killTarget(g, me, seats.filter(function (s) { return s !== me.seat; }));
+    seats = seats.filter(function (s) {
+      return s !== me.seat && AI.killRisk(g, me, g.players[s], 3, null, 2) < 0.08;
+    });
+    var k = R.killTarget(g, me, seats);
     if (k != null) return k;
     var best = null;
     seats.forEach(function (s) { if (s === me.seat) return; var p = AI.pAlly(g, me, s); if (p < 0.3 && (!best || p < best.p)) best = { seat: s, p: p }; });
@@ -5987,11 +6052,20 @@ var FS = globalThis.FS || (globalThis.FS = {});
   };
 
   // ---------- 電腦：接到主程式的判斷 ----------
-  // 各角色當特工的勝率（%）：work/agentstat.js 6,000 局、角色隨機挑（不受選角偏好影響），2026-11-26 修正特工技能判斷之後量測
-  R.TE_RATE = { yidianyuan: 47, beileimao: 45, qibai: 40, emeifeng: 40, xiaobai: 34, shashou: 34, fuermosi: 30, fuping: 27, gangtie: 27, daili: 26,
+  // 各角色當特工的勝率（%）：角色隨機挑（不受選角偏好影響）、全場標準、5～8 人 10,200 局（2026-11-28 陣營防特工之後重量；舊表是 2026-11-26 的 work/agentstat.js，
+  // 很多已經不準，例如貝雷帽 45→22、小白 34→14、黃雀 26→37；等人死的黑玫瑰 29→13、六姐 40→19、閃靈 38→25、禮服蒙面 31→21 是這次陣營改成不亂殺人的結果）
+  R.TE_RATE = { yidianyuan: 46, emeifeng: 41, shashou: 41, qibai: 41, huangque: 37, daili: 35, xiangshui: 32, fuermosi: 28, laojin: 27, xiaomage: 26,
+    shanling: 25, chuzhang: 24, guaidao: 23, daofeng: 22, beileimao: 22, fushe: 21, lifu: 21, fuping: 21, gangtie: 20, liujie: 19, laoqiang: 19,
+    dameinv: 19, xiaobai: 14, heimeigui: 13, laogui: 9 };
+  // 新手照舊（使用者 2026-11-27：新手照原本的電腦）：新手特工選角色仍用舊表
+  R.TE_RATE_NOVICE = { yidianyuan: 47, beileimao: 45, qibai: 40, emeifeng: 40, xiaobai: 34, shashou: 34, fuermosi: 30, fuping: 27, gangtie: 27, daili: 26,
     huangque: 26, lifu: 25, laoqiang: 25, shanling: 24, xiangshui: 23, heimeigui: 23, dameinv: 23, xiaomage: 23, liujie: 21, fushe: 17, daofeng: 17,
     laojin: 15, laogui: 13, guaidao: 12, chuzhang: 10 };
   R.TE_PICK = 24;   // 越小越偏好任務容易的角色（12＝很偏好、24＝溫和）；特工的整體勝率會跟著變
+  // 標準 AI 隨機選角，4／6／8 人、不含特工，各 1,600 局。專家只用自己拿到的候選。
+  var CAMP_RATE = { fuermosi:57, heimeigui:50, daili:45, daofeng:42, shanling:54, fushe:51, xiaomage:50, huangque:45, gangtie:43,
+    lifu:53, fuping:51, laogui:44, beileimao:61, liujie:46, dameinv:42, qibai:48, yidianyuan:50, guaidao:49, laojin:43,
+    laoqiang:55, emeifeng:54, chuzhang:48, xiaobai:42, shashou:51, xiangshui:51 };
   R.aiRole = function (g, me, req) {
     var RATE = { dameinv: 6, fuping: 5, fushe: 7, yidianyuan: 5, emeifeng: 7, qibai: 6, xiangshui: 5, laojin: 6, shanling: 6, huangque: 6, daili: 6, daofeng: 6, xiaomage: 5, fuermosi: 6, liujie: 6, lifu: 6, shashou: 5,
       laoqiang: 6, gangtie: 6, laogui: 6, xiaobai: 5, heimeigui: 5, beileimao: 6, guaidao: 5, chuzhang: 6 };
@@ -5999,7 +6073,9 @@ var FS = globalThis.FS || (globalThis.FS = {});
     var te = me.identity === 'te';
     req.options.forEach(function (id) {
       // 特工：依這個角色當特工的勝率選（R.TE_RATE，電腦對電腦統計）；軍情／潛伏照原本的分數
-      var v = te ? (R.TE_RATE[id] || 20) / R.TE_PICK + g.rand() * 2 : (RATE[id] || 5) + g.rand() * 3;
+      var v;
+      if (AI.expert(me)) v = (te ? R.TE_RATE[id] : CAMP_RATE[id]) + g.rand() * 5;
+      else v = te ? ((AI.std(me) ? R.TE_RATE : R.TE_RATE_NOVICE)[id] || 20) / R.TE_PICK + g.rand() * 2 : (RATE[id] || 5) + g.rand() * 3;
       if (!best || v > best.v) best = { v: v, id: id };
     });
     // 標準特工老金（2026-11-27）：【棄車保帥】要角色翻開才能用（每次自己收情報可以再從棄牌堆補一張不同顏色的），一開局就翻開
@@ -6085,6 +6161,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
     var t = g.transit, trig = req.trig;
     if (o.name === 'suoding' && trig.kind === 'arrive' && t && t.card) {
       var X = trig.actor, c = AI.knownColor(g, me), px = AI.pAlly(g, me, X);
+      if (AI.killRisk(g, me, g.players[X], 1) >= 0.08) return null;
       if (o.targets.indexOf(X) >= 0 && AI.foe(g, me, X) && (c === 'black' || (c == null && g.counts(g.players[X]).black >= 2 && AI.foe(g, me, t.sender))))
         return { val: c === 'black' ? 20 : 6, ret: { type: 'use', cardId: o.cardId, alt: 'jimin', target: X } };
     }
@@ -6225,6 +6302,27 @@ var FS = globalThis.FS || (globalThis.FS = {});
     var X = g.players[seat]; return R.vis(g, me, X) === 'shashou' || X.flags.employer != null ? 0.35 : 1;
   };
   R.known = function (g, me, s) { var m = g.aiMem && g.aiMem[me.seat]; return m && m.ident ? m.ident[s] || null : null; };
+  // 只記對方能自己決定的明牌。血染、鎖定、退回和不知顏色的蓋牌不算表態。
+  function xiaobaiCanWinOnBlack(g, q) {
+    return !g.deaths.length && g.counts(q).true < 3;
+  }
+  function noteXiaobai(g, me, m, q, weight) {
+    if (q === me || !g.pool.te || !q.rolePublic || q.role !== 'xiaobai' || !xiaobaiCanWinOnBlack(g, q)) return;
+    var evidence = m.xiaobaiEvidence || (m.xiaobaiEvidence = {});
+    evidence[q.seat] = Math.max(-4, Math.min(4, (evidence[q.seat] || 0) + weight));
+  }
+  ['accept', 'reject', 'receive'].forEach(function (event) {
+    var previous = AI.obs[event];
+    AI.obs[event] = function (g, me, m, d) {
+      previous(g, me, m, d);
+      var t = g.transit, q = g.players[d.seat];
+      if (event === 'receive') {
+        if (d.ctx.why === '收買' && d.ctx.sender === q.seat && d.card.color === 'black') noteXiaobai(g, me, m, q, 2);
+      } else if (t && t.faceUp && !d.forced && t.sender !== q.seat && t.card.color === 'black') {
+        noteXiaobai(g, me, m, q, event === 'accept' ? 2 : -1);
+      }
+    };
+  });
   ['learn', 'death', 'identity'].forEach(function (k) {
     var base = AI.obs[k];
     AI.obs[k] = function (g, me, m, d) {
@@ -6276,7 +6374,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
     var r = R.mRole(me);
     if (r === 'fuping') return mc(g, me).t >= 3;
     if (r === 'laogui') return me.hand.length - (me._lgPlan ? 1 : 0) >= 5;   // 自己傳情報前估算時，傳出那張已經不在手上（2026-11-27）
-    if (r === 'xiaobai') return !g.deaths.length && me.intel.length + 1 < 6;
+    if (r === 'xiaobai') return xiaobaiCanWinOnBlack(g, me);
     return false;
   };
   R.otherWinReady = function (g, me) { var r = R.mRole(me); return (r === 'yidianyuan' || r === 'qibai') && dist(r, mc(g, me)) === 0; };
@@ -6286,9 +6384,130 @@ var FS = globalThis.FS || (globalThis.FS = {});
     if (kn) return kn === 'te' ? 1 : 0;
     if (!g.pool.te) return 0;
     var tot = 0; Object.keys(g.pool).forEach(function (k) { tot += g.pool[k]; });
-    if (me.identity === 'te') return (g.pool.te - 1) / Math.max(1, tot - 1);
     var en = g.camps.filter(function (k) { return k !== me.identity && k !== 'te'; })[0];
-    return (1 - AI.pAlly(g, me, q.seat)) * g.pool.te / (g.pool.te + (g.pool[en] || 0));
+    var p = me.identity === 'te' ? (g.pool.te - 1) / Math.max(1, tot - 1)
+      : (1 - AI.pAlly(g, me, q.seat)) * g.pool.te / (g.pool.te + (g.pool[en] || 0));
+    var memory = g.aiMem[me.seat], evidence = memory.xiaobaiEvidence && memory.xiaobaiEvidence[q.seat];
+    if (!evidence || p <= 0 || p >= 1) return p;
+    var odds = p / (1 - p) * Math.pow(2, evidence);
+    return odds / (1 + odds);
+  };
+  // 再給假情報會不會替對方完成死亡任務。blackCards 是往後估算的張數，
+  // 小白看死亡當時的總數，第三張假情報也已經算在其中。
+  AI.deathMissionRisk = function (g, me, q, blackCards, via) {
+    if (!g.pool.te || q === me || !q.alive || !q.rolePublic || KIND[q.role] !== 'die') return 0;
+    var counts = g.counts(q);
+    if (counts.black + blackCards < 3) return 0;
+    if (q.role === 'xiaobai' && !xiaobaiCanWinOnBlack(g, q)) return 0;
+    if ((q.role === 'fuping' && counts.true < 3) || (q.role === 'laogui' && q.hand.length < 5)) return 0;
+    var chance = ptd(g, me, q);
+    if (!chance) return 0;
+    var memory = g.aiMem[me.seat], known = memory.ident || {};
+    if (!known[q.seat]) {
+      var accounted = me.identity === 'te' ? 1 : 0;
+      Object.keys(known).forEach(function (s) { if (+s !== me.seat && known[s] === 'te') accounted++; });
+      if (accounted >= g.pool.te) return 0;
+    }
+    if (me.identity === 'te') {
+      var role = R.mRole(me);
+      if (R.otherWinReady(g, me)) return 0;
+      if (role === 'heimeigui' && counts.true > 0 && g.deaths.some(function (d) { return d.trueIntel > 0 && d.seat !== me.seat; })) return 0;
+      if ((role === 'liujie' || role === 'shanling') && counts.true < 2 || role === 'lifu' && me.flags.nemesis === q.seat) return 0;
+      if (KIND[role] === 'kill' && !me._otherKill) {
+        if (role === 'huangque' && via === 'huangque') return 0;
+        if (role === 'shashou') {
+          var employer = R.known(g, me, me.flags.employer);
+          if (employer && employer !== 'te' && me.flags.employer !== q.seat) return 0;
+        }
+        if (['daofeng','guaidao','xiaomage'].indexOf(role) >= 0 && R.killOk(g, me, q) === 1) return 0;
+      }
+    }
+    return chance;
+  };
+  // ---------- 標準以上：陣營防「等人死」的特工（2026-11-28）----------
+  // 使用者：「正常陣營防得了特工嗎？剛剛黑玫瑰的隱藏任務，隊友居然毫不猶豫去打人最後輸了」「可能也要判斷特工的隱藏任務行動」。
+  // 量測（標準 2,000 局）：105 局是陣營玩家親手殺人、剛好完成公開角色特工的任務（黑玫瑰、六姐、閃靈、禮服蒙面 74 局）；
+  // 殺人當下對那名特工估的機率 4 成低於 0.1。校準（91,706 筆）：R.pTe 估 1% 的人實際 17% 是特工、估 5～20% 的實際 29%——
+  // 只看「像不像敵人」，特工偽裝成隊友就幾乎不懷疑。改成人數比例（還沒確定身分的人裡有幾個特工）和原本推理各半。
+  R.PTE_W = 0.6;
+  R.pTeDef = function (g, me, q) {
+    var kn = R.known(g, me, q.seat);
+    if (kn) return kn === 'te' ? 1 : 0;
+    if (!g.pool.te) return 0;
+    if (me.identity === 'te') return R.pTe(g, me, q);
+    var unk = 0, kte = 0;
+    g.players.forEach(function (p) { if (p === me) return; var k = R.known(g, me, p.seat); if (!k) unk++; else if (k === 'te') kte++; });
+    var rem = g.pool.te - kte;
+    if (rem <= 0) return 0;
+    var p = R.PTE_W * Math.min(1, rem / Math.max(1, unk)) + (1 - R.PTE_W) * R.pTe(g, me, q);
+    var ev = g.aiMem[me.seat].teEv && g.aiMem[me.seat].teEv[q.seat];
+    if (!ev || p >= 1) return p;
+    var odds = p / (1 - p) * Math.pow(2, ev);
+    return odds / (1 + odds);
+  };
+  // 看得到的舉動（2026-11-28，使用者：「可能也要判斷特工的隱藏任務行動」）。量測（專家 1,500 局，h_sig）：
+  // 主動收下明牌假情報的人，特工比例是一般的 2～2.75 倍；親手殺人 1.3 倍；其他（收另一色、蓋牌主動收、拒收）幾乎看不出來。
+  // 記成以 2 為底的對數勝算，只給 pTeDef（防特工的判斷）用。小白另有自己的紀錄（xiaobaiEvidence），不重複算
+  R.TE_EV = { blackUp: 1.3, kill: 0.4 };
+  function noteTe(g, me, seat, w) {
+    if (seat === me.seat || !AI.std(me) || AI.STD_OFF.teev) return;
+    var m = g.aiMem[me.seat], e = m.teEv || (m.teEv = {});
+    e[seat] = Math.max(-3, Math.min(3, (e[seat] || 0) + w));
+  }
+  (function () {
+    var prevAcc = AI.obs.accept, prevDeath = AI.obs.death;
+    AI.obs.accept = function (g, me, m, d) {
+      prevAcc(g, me, m, d);
+      var t = g.transit, q = g.players[d.seat];
+      if (t && t.card && t.faceUp && !d.forced && t.sender !== d.seat && t.card.color === 'black' && !(q.rolePublic && q.role === 'xiaobai')) noteTe(g, me, d.seat, R.TE_EV.blackUp);
+    };
+    AI.obs.death = function (g, me, m, d) {
+      prevDeath(g, me, m, d);
+      if (d.killer != null && d.killer !== d.seat) noteTe(g, me, d.killer, R.TE_EV.kill);
+    };
+  })();
+  function ptd(g, me, q) { return AI.std(me) && !AI.STD_OFF.ptd ? R.pTeDef(g, me, q) : R.pTe(g, me, q); }
+  R.ptd = ptd;
+  // q 現在死亡，會不會讓公開角色 X（等人死的任務）完成：k＝q 現在的情報
+  function watchHit(g, X, q, k) {
+    switch (X.role) {
+      case 'heimeigui': return k.true >= 1 && g.deaths.some(function (d) { return d.seat !== X.seat && d.trueIntel >= 1; });
+      case 'liujie': case 'shanling': return k.true < 2;
+      case 'lifu': return X.flags.nemesis === q.seat;
+    }
+    return false;
+  }
+  R.watchHit = watchHit;
+  // 再給 q n 張假情報（會死）時，替「等人死」的公開角色完成任務的機率（只有標準以上）
+  AI.watchRisk = function (g, me, q, n) {
+    if (!g.pool.te || !AI.std(me) || AI.STD_OFF.watch || q === me || !q.alive) return 0;
+    var k = g.counts(q);
+    if (k.black + (n == null ? 1 : n) < 3) return 0;
+    if (me.identity === 'te' && me.role && (R.otherWinReady(g, me) || R.deathValue(g, me, q) > 20)) return 0;   // 這人死了我也完成任務：一起贏
+    var keep = 1;
+    g.players.forEach(function (X) {
+      if (X === q || X === me || !X.alive || !X.rolePublic || KIND[X.role] !== 'watch' || !watchHit(g, X, q, k)) return;
+      keep *= 1 - ptd(g, me, X);
+    });
+    return 1 - keep;   // 試過「快湊滿的敵人打折」（0、0.3、1 倍）：量不出差別，不加
+  };
+  // 浮萍【犧牲】：別人回合任何人成功接收假情報，他都能搶來收。公開的浮萍已有兩張假情報、三張真情報時，
+  // 這回合有人收下假情報＝他可以當場完成任務（量測：剩下的「陣營替浮萍殺人」幾乎都是這樣）
+  AI.grabRisk = function (g, me, q) {
+    if (!g.pool.te || !AI.std(me) || AI.STD_OFF.grab || !g.turn) return 0;
+    if (me.identity === 'te' && me.role && R.otherWinReady(g, me)) return 0;
+    var keep = 1;
+    g.players.forEach(function (X) {
+      if (X === me || X === q || !X.alive || !X.rolePublic || X.role !== 'fuping' || g.turn.seat === X.seat) return;
+      var k = g.counts(X);
+      if (k.black >= 2 && k.true >= 3) keep *= 1 - ptd(g, me, X);
+    });
+    return 1 - keep;
+  };
+  // 殺 q 會不會替特工完成任務：q 自己的死亡任務（小白、老鬼、浮萍）＋等人死的公開角色
+  AI.killRisk = function (g, me, q, blackCards, via, n) {
+    var a = AI.deathMissionRisk(g, me, q, blackCards, via), b = AI.watchRisk(g, me, q, n);
+    return 1 - (1 - a) * (1 - b);
   };
   // 特工把假情報送到 q 手上、讓 q 死亡（算特工親手殺死）的價值
   // via＝'huangque'：用黃雀在後殺（黃雀的任務只算這種）
@@ -6305,6 +6524,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
   };
   // 特工用技能直接殺人前看任務：null＝沒有特別理由（照原本判斷）、false＝殺了會毀掉任務、true＝殺了就完成任務
   R.agentKill = function (g, me, X) {
+    if (X && AI.killRisk(g, me, X, 1) >= 0.08) return false;
     if (me.identity !== 'te' || !me.role || !X || X === me || mc(g, X).k < 2) return null;
     var dv = R.deathValue(g, me, X);
     return dv < 0 ? false : (dv > 20 ? true : null);
@@ -6397,7 +6617,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
     if (c !== 'black' && x.t + 1 >= 6) risk += R.pTe(g, me, q) * 110;   // 任何特工：存有六張真情報（看不到角色也算）
     g.players.forEach(function (X) {
       if (!X.alive || X === me || !X.rolePublic || !X.role || X.role === 'xiangshui' || X.role === 'shashou') return;
-      var pt = R.pTe(g, me, X);
+      var pt = ptd(g, me, X);
       if (pt < 0.03) return;
       var kind = KIND[X.role], hit = false;
       if (dies) {
@@ -6418,7 +6638,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
   // 這份情報退回 S 手上，會不會讓「可能是特工」的 S 完成任務（湊色差一張、六張真情報差一張）。c＝已知顏色，不知道就 null
   R.bounceRisk = function (g, me, S, c) {
     if (!g.pool.te || me.identity === 'te' || S === me || !S.alive) return 0;
-    var pt = R.pTe(g, me, S); if (pt < 0.05) return 0;
+    var pt = ptd(g, me, S); if (pt < 0.05) return 0;
     var x = mc(g, S), role = R.vis(g, me, S), p = 0;
     (c ? [c] : ['red', 'blue', 'dual']).forEach(function (cc) {
       if (cc === 'black') return;
@@ -6451,15 +6671,21 @@ var FS = globalThis.FS || (globalThis.FS = {});
   // ---------- 接到電腦的判斷 ----------
   var baseRecv = AI.recvVal, basePickBurn = AI.pickBurn;
   AI.recvVal = function (g, me, q, c) {
-    if (me.identity === 'te' && me.role) return R.agentRecv(g, me, q, c);
-    var v = baseRecv(g, me, q, c);
+    if (c === 'black' && q !== me) {
+      var black = g.counts(q).black, risk = AI.killRisk(g, me, q, 3, null, 1);
+      if (risk >= 0.08) return -(black >= 2 ? 120 : black === 1 ? 18 : 6) * (1 + risk);
+    }
+    var grab = c === 'black' ? AI.grabRisk(g, me, q) * 120 : 0;
+    if (me.identity === 'te' && me.role) return R.agentRecv(g, me, q, c) - grab;
+    var v = baseRecv(g, me, q, c) - grab;
     if (q === me && me.role === 'shashou' && S.CAMP_COLOR[me.identity] && c !== 'black' && c !== 'dual' && c !== S.CAMP_COLOR[me.identity]) v += 3;   // 職業殺手：敵方顏色的真情報＝暗殺的燒毀資源，也擋敵人
     if (q !== me && c !== 'black' && me.role === 'xiangshui' && R.otherWinReady(g, me)) {
       // 軍情／潛伏的致命香水蓋著七百或譯電員、已備妥：敵方湊滿＝攔下單獨獲勝，不用再擋（2026-11-26）
       var k = mc(g, q), en = me.identity === 'jun' ? 'red' : 'blue', ke = en === 'red' ? k.r : k.b;
       if ((c === en || c === 'dual') && ke + k.d >= 2) v = Math.max(v, 0) + 60 * (1 - AI.pAlly(g, me, q.seat));
     }
-    return v - R.agentRisk(g, me, q, c);   // 一般玩家：別讓可能是特工的人完成任務
+    var risk = R.agentRisk(g, me, q, c);
+    return v - (AI.expert(me) && c !== 'black' ? 2.5 : 1) * risk;
   };
   AI.pickBurn = function (g, me, intels) {
     if (me.identity !== 'te' || !me.role) return basePickBurn(g, me, intels);
@@ -6477,6 +6703,13 @@ var FS = globalThis.FS || (globalThis.FS = {});
   var prevPickBurn = AI.pickBurn;
   AI.pickBurn = function (g, me, intels) {
     var b = prevPickBurn(g, me, intels);
+    intels.forEach(function (x) {
+      var q = g.players[x.seat], risk = AI.killRisk(g, me, q, 1);
+      if (risk >= 0.08) {
+        var value = 8 + 14 * risk;
+        if (!b || value > b.val) b = { val: value, intel: x };
+      }
+    });
     if (mc(g, me).k < 2 || (me.identity === 'te' && me.role && R.deathWins(g, me))) return b;
     var th = R.killThreat(g, me);   // 暗殺之外，也算笑裡藏刀、黃雀在後、致命一擊、血染
     if (th > 0.3) intels.forEach(function (x) { if (x.seat === me.seat) { var v = 10 + 8 * th; if (!b || v > b.val) b = { val: v, intel: x }; } });
@@ -6484,6 +6717,9 @@ var FS = globalThis.FS || (globalThis.FS = {});
   };
   var baseKill = R.killTarget;
   R.killTarget = function (g, me, seats, via) {
+    seats = (seats || R.otherSeats(g, me)).filter(function (s) {
+      return AI.killRisk(g, me, g.players[s], 1, via) < 0.08;
+    });
     if (me.identity !== 'te' || !me.role) return baseKill(g, me, seats);
     var best = null;
     (seats || R.otherSeats(g, me)).forEach(function (s) {
@@ -6616,7 +6852,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
       qiaozhuang: '你的回合開始抽牌前，拿走另一名玩家（角色已公開）的一項非狀態技能，用到你的回合結束，他這段時間失去那項技能。',
       shoumai: '別人的回合開始抽牌前，給他四張手牌，再挑他一張情報由你收下。'
     }, '成為第一個死亡的人，而且死時情報少於六張。要早點收假情報；一旦有別人先死，任務就失敗。',
-      '喬裝拿英雄本色、精明、聲東擊西這類立刻有用的；收買代價大，留給「拿到就宣勝」或「拆掉敵人勝利」的時候。'),
+      '喬裝可借英雄本色、精明、聲東擊西。收買可用來拿致勝情報，或拆掉敵人的致勝情報。對上小白時，留意他是否主動收黑：全場還沒死人時，第三張黑情報可能讓他宣勝。被鎖定或被塞牌都不能當成求死的線索。'),
     laoqiang: G('ctl', 3, 24, '出牌前偷大家的牌再換爛牌回去；別人收情報時跟他交換情報。', {
       shengdong: '你的回合出牌前，抽每位玩家各一張手牌，或抽一名玩家兩張，再從你的手牌挑同樣張數還回去。',
       hemou: '別人要接收情報時，拿自己一張真情報跟他已存的一張情報交換（加密的不能換）。換完立刻檢查宣勝與死亡。'
@@ -9729,6 +9965,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 不能存就算了 */ } }
   function load() {
     try { var o = JSON.parse(lsGet(KEY) || '{}'); for (var k in o) if (k in set) set[k] = o[k]; } catch (e) { /* 用預設值 */ }
+    if (['novice', 'standard', 'expert'].indexOf(set.ai) < 0) set.ai = 'standard';
     // 舊存的設定還是舊預設 1 秒（多半沒動過）：一次改成新預設 1.3 秒；自己調過別的值就照舊
     if (!set.speedV2) { if (+set.speed === 1) set.speed = 1.3; set.speedV2 = true; save(); }
   }
@@ -9841,7 +10078,7 @@ var FS = globalThis.FS || (globalThis.FS = {});
     $('modal').classList.add('hidden');
     var g = new S.Game({ players: (over && over.players) || +set.players, markers: !!+set.markers, roles: !!+set.roles, agents: agentsOn(), humanSeat: 0, startSeat: set.start });
     g.setup();
-    g.players.forEach(function (p) { p.ctrl = p.human ? UI.controller : S.AI.controller; if (!p.human) p.aiLevel = set.ai === 'novice' ? 'novice' : 'standard'; });   // 電腦難度
+    g.players.forEach(function (p) { p.ctrl = p.human ? UI.controller : S.AI.controller; if (!p.human) p.aiLevel = set.ai; });
     S.AI.attach(g);
     Main.game = g;
     show('game');
